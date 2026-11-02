@@ -24,7 +24,6 @@ class BotStoreTests(unittest.IsolatedAsyncioTestCase):
             1001,
             welcome_channel_id=2002,
             automod_enabled=True,
-            channel_lock_overwrites={"3003": None},
         )
         await self.store.close()
 
@@ -35,32 +34,8 @@ class BotStoreTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(settings["welcome_channel_id"], 2002)
             self.assertTrue(settings["automod_enabled"])
             self.assertEqual(settings["automod_max_mentions"], 5)
-            self.assertEqual(settings["channel_lock_overwrites"], {"3003": None})
         finally:
             await reopened.close()
-
-    async def test_warnings_persist_and_can_be_cleared(self) -> None:
-        first_id = await self.store.add_warning(1001, 4004, 5005, "First reason")
-        second_id = await self.store.add_warning(1001, 4004, 5006, "Second reason")
-
-        self.assertEqual(await self.store.count_warnings(1001, 4004), 2)
-        warnings = await self.store.get_warnings(1001, 4004)
-        self.assertEqual(
-            [int(row["warning_id"]) for row in warnings],
-            [second_id, first_id],
-        )
-        self.assertFalse(
-            await self.store.clear_warning(1001, 9999, first_id, 5005)
-        )
-        self.assertTrue(
-            await self.store.clear_warning(1001, 4004, first_id, 5005)
-        )
-        self.assertFalse(
-            await self.store.clear_warning(1001, 4004, first_id, 5005)
-        )
-        self.assertEqual(await self.store.count_warnings(1001, 4004), 1)
-        remaining = await self.store.get_warnings(1001, 4004)
-        self.assertEqual([int(row["warning_id"]) for row in remaining], [second_id])
 
     async def test_ticket_lifecycle(self) -> None:
         await self.store.create_ticket(1001, 3003, 4004)

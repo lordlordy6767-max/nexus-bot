@@ -13,7 +13,6 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "verified_role_id": None,
     "ticket_category_id": None,
     "support_role_id": None,
-    "channel_lock_overwrites": {},
     "automod_enabled": False,
     "automod_block_invites": True,
     "automod_max_mentions": 5,
@@ -77,20 +76,6 @@ class BotStore:
                 role_id INTEGER NOT NULL,
                 PRIMARY KEY (message_id, emoji)
             );
-
-            CREATE TABLE IF NOT EXISTS member_warnings (
-                warning_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                moderator_id INTEGER NOT NULL,
-                reason TEXT NOT NULL,
-                created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-                cleared_at INTEGER,
-                cleared_by INTEGER
-            );
-
-            CREATE INDEX IF NOT EXISTS member_warnings_by_user
-                ON member_warnings(guild_id, user_id, warning_id);
             """
         )
         await self._db.commit()
@@ -240,72 +225,3 @@ class BotStore:
             (message_id, emoji),
         ) as cursor:
             return await cursor.fetchone()
-
-    async def add_warning(
-        self,
-        guild_id: int,
-        user_id: int,
-        moderator_id: int,
-        reason: str,
-    ) -> int:
-        cursor = await self.db.execute(
-            """
-            INSERT INTO member_warnings (guild_id, user_id, moderator_id, reason)
-            VALUES (?, ?, ?, ?)
-            """,
-            (guild_id, user_id, moderator_id, reason),
-        )
-        await self.db.commit()
-        return int(cursor.lastrowid)
-
-    async def get_warnings(
-        self,
-        guild_id: int,
-        user_id: int,
-        *,
-        limit: int = 10,
-    ) -> list[aiosqlite.Row]:
-        async with self.db.execute(
-            """
-            SELECT warning_id, moderator_id, reason, created_at
-            FROM member_warnings
-            WHERE guild_id = ? AND user_id = ? AND cleared_at IS NULL
-            ORDER BY warning_id DESC
-            LIMIT ?
-            """,
-            (guild_id, user_id, max(1, min(int(limit), 50))),
-        ) as cursor:
-            return list(await cursor.fetchall())
-
-    async def count_warnings(self, guild_id: int, user_id: int) -> int:
-        async with self.db.execute(
-            """
-            SELECT COUNT(*) AS warning_count
-            FROM member_warnings
-            WHERE guild_id = ? AND user_id = ? AND cleared_at IS NULL
-            """,
-            (guild_id, user_id),
-        ) as cursor:
-            row = await cursor.fetchone()
-        return int(row["warning_count"]) if row else 0
-
-    async def clear_warning(
-        self,
-        guild_id: int,
-        user_id: int,
-        warning_id: int,
-        moderator_id: int,
-    ) -> bool:
-        cursor = await self.db.execute(
-            """
-            UPDATE member_warnings
-            SET cleared_at = unixepoch(), cleared_by = ?
-            WHERE guild_id = ?
-              AND user_id = ?
-              AND warning_id = ?
-              AND cleared_at IS NULL
-            """,
-            (moderator_id, guild_id, user_id, warning_id),
-        )
-        await self.db.commit()
-        return cursor.rowcount > 0
