@@ -10,6 +10,7 @@ import discord
 from discord import app_commands
 
 from bot_app.branding import PURPLE, brand_embed
+from bot_app.moderation_log import send_moderation_log
 from bot_app.storage import BotStore
 
 logger = logging.getLogger("discord_bot.automod")
@@ -140,6 +141,7 @@ async def handle_automod(store: BotStore, message: discord.Message) -> bool:
 
     if flood_detected:
         recent.clear()
+    message_removed = True
     try:
         await message.delete()
     except discord.NotFound:
@@ -150,7 +152,16 @@ async def handle_automod(store: BotStore, message: discord.Message) -> bool:
             guild.id,
             message.channel.id,
         )
+        message_removed = False
+    except discord.HTTPException:
+        logger.exception(
+            "AutoMod could not delete a message in guild %s channel %s",
+            guild.id,
+            message.channel.id,
+        )
+        message_removed = False
 
+    timeout_applied = False
     if flood_detected:
         bot_member = guild.me
         if (
@@ -164,11 +175,39 @@ async def handle_automod(store: BotStore, message: discord.Message) -> bool:
                     discord.utils.utcnow() + datetime.timedelta(seconds=30),
                     reason="NEXUS V1 AutoMod: message flood",
                 )
+                timeout_applied = True
             except (discord.Forbidden, discord.HTTPException):
                 logger.info(
                     "AutoMod removed a flood but could not timeout member %s",
                     member.id,
                 )
+
+    action = (
+        "Removed violating message"
+        if message_removed
+        else "Could not remove violating message"
+    )
+    if flood_detected:
+        action += (
+            " and applied a 30-second timeout"
+            if timeout_applied
+            else "; timeout was not applied"
+        )
+    log_warning = await send_moderation_log(
+        store,
+        guild,
+        action=action,
+        actor="NEXUS V1 AutoMod",
+        affected=member,
+        reason=violation,
+        occurred_at=message.created_at,
+    )
+    if log_warning:
+        logger.warning(
+            "AutoMod enforcement in guild %s was not recorded: %s",
+            guild.id,
+            log_warning,
+        )
 
     try:
         await message.channel.send(

@@ -20,7 +20,7 @@ logger = logging.getLogger("discord_bot.commands")
 def register_commands(bot: discord.Client, store: BotStore) -> None:
     register_onboarding(bot, store)
     register_automod(bot, store)
-    register_moderation(bot)
+    register_moderation(bot, store)
     register_tickets(bot, store)
     register_reaction_roles(bot, store)
     register_levels(bot, store)

@@ -23,6 +23,7 @@ class BotStoreTests(unittest.IsolatedAsyncioTestCase):
         await self.store.set_settings(
             1001,
             welcome_channel_id=2002,
+            moderation_log_channel_id=2010,
             automod_enabled=True,
         )
         await self.store.close()
@@ -32,6 +33,7 @@ class BotStoreTests(unittest.IsolatedAsyncioTestCase):
         try:
             settings = await reopened.get_settings(1001)
             self.assertEqual(settings["welcome_channel_id"], 2002)
+            self.assertEqual(settings["moderation_log_channel_id"], 2010)
             self.assertTrue(settings["automod_enabled"])
             self.assertEqual(settings["automod_max_mentions"], 5)
         finally:

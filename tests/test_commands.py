@@ -21,6 +21,7 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
             "verify",
             "welcome",
             "automod",
+            "moderation-log",
             "ban",
             "kick",
             "clear",
@@ -40,6 +41,10 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             {command.name for command in commands["automod"].commands},
             {"configure", "status"},
+        )
+        self.assertEqual(
+            {command.name for command in commands["moderation-log"].commands},
+            {"set", "disable", "status"},
         )
         await client.close()
 

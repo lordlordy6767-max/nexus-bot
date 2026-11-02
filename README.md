@@ -45,6 +45,11 @@ The bot will refuse to moderate members at or above its role hierarchy.
   AutoMod. It starts disabled. When enabled, it can remove Discord invite
   links, excess mentions, and message floods.
 - `/automod status` — view the current AutoMod settings.
+- `/moderation-log set channel` — send moderation and AutoMod actions to a
+  private channel hidden from `@everyone`. The bot needs View Channel, Send
+  Messages, and Embed Links in that channel.
+- `/moderation-log status` — check whether moderation logs can be delivered.
+- `/moderation-log disable` — stop sending moderation logs.
 - `/ticket-setup category [support_role]` — post a private ticket panel.
 - `/reaction-role-setup channel role emoji` — post a reaction that adds/removes
   the selected role.
@@ -56,6 +61,11 @@ The bot will refuse to moderate members at or above its role hierarchy.
 - `/clear amount` — delete 1–100 recent messages.
 - `/mute member minutes [reason]` — apply a Discord timeout for 1–40,320
   minutes (up to 28 days).
+
+Successful moderation actions include the actor, affected member or message
+count, reason, and timestamp in the configured log channel. If logging is not
+available, the moderation action still completes and the moderator receives a
+warning.
 
 Commands check the invoker's Discord permissions and role hierarchy. The bot
 also checks its own permissions and position before acting.

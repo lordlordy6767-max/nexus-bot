@@ -10,6 +10,7 @@ import aiosqlite
 
 DEFAULT_SETTINGS: dict[str, Any] = {
     "welcome_channel_id": None,
+    "moderation_log_channel_id": None,
     "verified_role_id": None,
     "ticket_category_id": None,
     "support_role_id": None,
