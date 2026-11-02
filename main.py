@@ -3,7 +3,6 @@ import os
 
 import discord
 from discord import app_commands
-from discord.ext import commands
 
 
 logging.basicConfig(
@@ -13,12 +12,10 @@ logging.basicConfig(
 logger = logging.getLogger("discord_bot")
 
 
-class DiscordBot(commands.Bot):
+class DiscordBot(discord.Client):
     def __init__(self) -> None:
-        super().__init__(
-            command_prefix="!",
-            intents=discord.Intents.default(),
-        )
+        super().__init__(intents=discord.Intents.default())
+        self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self) -> None:
         commands_synced = await self.tree.sync()
