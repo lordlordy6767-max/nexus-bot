@@ -60,3 +60,4 @@ __pycache__/
 .venv/
 .pythonlibs/
 .env
+bot_data/

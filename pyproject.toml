@@ -1,9 +1,10 @@
 [project]
 name = "repl-nix-workspace"
 version = "0.1.0"
-description = "A Discord bot starter built with discord.py"
+description = "NEXUS V1 multi-server Discord moderation and community bot"
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.22.1",
     "discord-py>=2.7.1",
 ]
 
