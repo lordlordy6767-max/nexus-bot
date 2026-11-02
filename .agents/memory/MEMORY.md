@@ -1,0 +1,1 @@
+- [Discord privileged intents](discord-privileged-intents.md) — after portal toggles, verify the exact combined intent set before weakening features.
