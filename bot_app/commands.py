@@ -63,7 +63,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
 
     @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
     @app_commands.describe(user="Who should I greet?")
-    async def greet(interaction: discord.Interaction, user: discord.User) -> None
+    async def greet(interaction: discord.Interaction, user: discord.User) -> None:
         guild_obj = interaction.guild or (await interaction.client.fetch_guild(interaction.guild_id) if interaction.guild_id else None)
         guild_name = guild_obj.name if guild_obj and guild_obj.name else "this server"
         try:
