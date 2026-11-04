@@ -50,18 +50,16 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
                 everyone=False,
             ),
         )
-    @bot.tree.command(name="send", description="Make NEXUS send a message for you.")
-    @app_commands.guild_only()
+@bot.tree.command(name="send", description="Make NEXUS send a message for you.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(message="What should I send?", channel="Where to send it? Leave empty to send here.")
     async def send(interaction: discord.Interaction, message: str, channel: discord.TextChannel | None = None) -> None:
         target = channel or interaction.channel
         await target.send(message)
         await interaction.response.send_message(f"Sent to {target.mention}! ✅", ephemeral=True)
 
-    @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
-    @app_commands.guild_only()
+    @bot.tree.command(name="greet", description="Make NEXUS greet someone.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(user="Who should I greet?")
-    async def greet(interaction: discord.Interaction, user: discord.Member) -> None:
+    async def greet(interaction: discord.Interaction, user: discord.User) -> None:
         await interaction.response.send_message(
             embed=brand_embed(
                 "Hello! 👋",
@@ -70,20 +68,19 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
         )
 
-    @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.")
-    @app_commands.guild_only()
+    @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(user="Who to DM?", message="What should I tell them?")
-    async def dm(interaction: discord.Interaction, user: discord.Member, message: str) -> None:
+    async def dm(interaction: discord.Interaction, user: discord.User, message: str) -> None:
         try:
-            await user.send(f"💌 You got a message from **{interaction.user.display_name}** in **{interaction.guild.name}**:\n\n> {message}")
+            guild_name = interaction.guild.name if interaction.guild else "a DM"
+            await user.send(f"💌 You got a message from **{interaction.user.display_name}** in **{guild_name}**:\n\n> {message}")
             await interaction.response.send_message(f"DM sent to {user.mention}! 🤫", ephemeral=True)
         except discord.Forbidden:
             await interaction.response.send_message(f"Couldn't DM {user.mention} - they have DMs closed.", ephemeral=True)
 
-    @bot.tree.command(name="shoutout", description="Hype someone up!")
-    @app_commands.guild_only()
+    @bot.tree.command(name="shoutout", description="Hype someone up!", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(user="Who deserves a shoutout?", reason="Why are they awesome?")
-    async def shoutout(interaction: discord.Interaction, user: discord.Member, reason: str) -> None:
+    async def shoutout(interaction: discord.Interaction, user: discord.User, reason: str) -> None:
         await interaction.response.send_message(
             embed=brand_embed(
                 "🔥 SHOUTOUT! 🔥",
@@ -92,8 +89,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
         )
 
-    @bot.tree.command(name="goodmorning", description="Send a good morning message.")
-    @app_commands.guild_only()
+    @bot.tree.command(name="goodmorning", description="Send a good morning message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     async def goodmorning(interaction: discord.Interaction) -> None:
         await interaction.response.send_message(
             embed=brand_embed(
@@ -102,8 +98,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             )
         )
 
-    @bot.tree.command(name="goodnight", description="Send a good night message.")
-    @app_commands.guild_only()
+    @bot.tree.command(name="goodnight", description="Send a good night message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     async def goodnight(interaction: discord.Interaction) -> None:
         await interaction.response.send_message(
             embed=brand_embed(
