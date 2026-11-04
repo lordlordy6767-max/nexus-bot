@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import random
 
 import discord
 from discord import app_commands
@@ -126,6 +127,125 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         except Exception as e:
             print(f"GOODNIGHT ERROR: {e}")
             await interaction.response.send_message(f"Good night everyone! {interaction.user.mention} says sweet dreams! 😴")
+
+    # ===== NEW COMMANDS =====
+
+    @bot.tree.command(name="poll", description="Create a Yes / No poll.")
+    @app_commands.describe(question="What are we voting on?")
+    async def poll(interaction: discord.Interaction, question: str) -> None:
+        await interaction.response.send_message(
+            embed=brand_embed("📊 POLL 📊", f"**{question}**\n\n👍 = Yes\n👎 = No\n\nStarted by {interaction.user.mention}")
+        )
+        try:
+            msg = await interaction.original_response()
+            await msg.add_reaction("👍")
+            await msg.add_reaction("👎")
+        except Exception as e:
+            print(f"POLL REACTION ERROR: {e}")
+
+    @bot.tree.command(name="8ball", description="Ask the Magic 8-Ball a question.")
+    @app_commands.describe(question="What do you want to ask?")
+    async def eightball(interaction: discord.Interaction, question: str) -> None:
+        answers = [
+            "Yes, definitely! ✅", "Nope, not a chance. ❌", "Maybe... ask again later. 🤔",
+            "100% YES! 🔥", "My sources say no. 🙅", "Absolutely! Go for it! 🚀",
+            "Don't count on it. 😬", "Signs point to yes. 👀", "Ask again, I'm sleeping. 😴",
+            "Bro... yes. 💯", "Nah fam. 🚫", "In your dreams. 💭",
+        ]
+        await interaction.response.send_message(
+            embed=brand_embed("🎱 Magic 8-Ball 🎱", f"**Question:** {question}\n\n**Answer:** {random.choice(answers)}\n\nAsked by {interaction.user.mention}")
+        )
+
+    @bot.tree.command(name="roast", description="Friendly roast someone.")
+    @app_commands.describe(user="Who should I roast?")
+    async def roast(interaction: discord.Interaction, user: discord.User) -> None:
+        roasts = [
+            "Your WiFi is faster than your brain. 📶",
+            "You bring everyone so much joy... when you leave the room. 😂",
+            "You're the reason we have loading screens. ⏳",
+            "Your gameplay is so bad, even the bots feel sorry for you. 🤖",
+            "You have the charisma of a buffering video. 🐢",
+            "If laziness was an Olympic sport, you'd win gold while napping. 🥇😴",
+            "You're proof that even Discord has a mute button for a reason. 🔇",
+            "Your IQ and your ping have one thing in common... both are unstable. 📉",
+        ]
+        await interaction.response.send_message(
+            embed=brand_embed("🔥 ROAST TIME 🔥", f"{user.mention}, {random.choice(roasts)}"),
+            allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
+        )
+
+    @bot.tree.command(name="announce", description="Post a fancy announcement. Staff only.")
+    @app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.guild_only()
+    async def announce(interaction: discord.Interaction, title: str, message: str, channel: discord.TextChannel | None = None) -> None:
+        await interaction.response.defer(ephemeral=True)
+        target = channel or interaction.channel
+        try:
+            await target.send(embed=brand_embed(f"📢 {title} 📢", f"{message}\n\n— Posted by {interaction.user.mention}"))
+            await interaction.followup.send(f"Announcement sent to {target.mention}! ✅", ephemeral=True)
+        except Exception as e:
+            print(f"ANNOUNCE ERROR: {e}")
+            await interaction.followup.send(f"Couldn't announce there: {e}", ephemeral=True)
+
+    @bot.tree.command(name="warn", description="Warn a member. Staff only.")
+    @app_commands.describe(user="Who to warn?", reason="Why are they being warned?")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.guild_only()
+    async def warn(interaction: discord.Interaction, user: discord.Member, reason: str) -> None:
+        await interaction.response.send_message(
+            embed=brand_embed("⚠️ WARNING ⚠️", f"{user.mention} has been warned.\n\n**Reason:** {reason}\n**By:** {interaction.user.mention}"),
+            allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
+        )
+        try:
+            await user.send(f"⚠️ You were warned in **{interaction.guild.name}**:\n\n> {reason}")
+        except Exception:
+            pass
+
+    @bot.tree.command(name="unmute", description="Unmute a member. Staff only.")
+    @app_commands.describe(user="Who to unmute?")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.guild_only()
+    async def unmute(interaction: discord.Interaction, user: discord.Member) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            await user.timeout(None)
+            await interaction.followup.send(f"Unmuted {user.mention}! ✅", ephemeral=True)
+        except Exception as e:
+            print(f"UNMUTE ERROR: {e}")
+            await interaction.followup.send(f"Couldn't unmute: {e}", ephemeral=True)
+
+    @bot.tree.command(name="unban", description="Unban a user by ID. Staff only.")
+    @app_commands.describe(user_id="The Discord ID of the banned user (right-click > Copy ID)")
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.guild_only()
+    async def unban(interaction: discord.Interaction, user_id: str) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            user_obj = await bot.fetch_user(int(user_id))
+            await interaction.guild.unban(user_obj)
+            await interaction.followup.send(f"Unbanned {user_obj.mention}! ✅", ephemeral=True)
+        except Exception as e:
+            print(f"UNBAN ERROR: {e}")
+            await interaction.followup.send(f"Couldn't unban: {e}\nMake sure you copied the correct User ID.", ephemeral=True)
+
+    @bot.tree.command(name="help", description="See all NEXUS commands.")
+    async def help_cmd(interaction: discord.Interaction) -> None:
+        text = (
+            "**👋 Welcome / Fun**\n"
+            "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball`\n\n"
+            "**📊 Community**\n"
+            "`/poll` `/rank` `/leaderboard`\n\n"
+            "**📢 Staff**\n"
+            "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
+            "**⚙️ Setup / System**\n"
+            "`/ping` `/verify` `/ticket-setup` `/reaction-role-setup` `/welcome set` `/list-roles` `/automod`\n\n"
+            "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
+        )
+        await interaction.response.send_message(
+            embed=brand_embed("🤖 NEXUS V1 - All Commands", text),
+            ephemeral=True
+        )
 
 async def handle_app_command_error(
     interaction: discord.Interaction,
