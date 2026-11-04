@@ -31,10 +31,15 @@ async def _punish(bot, guild, user_id, reason):
 def register_antinuke(bot: discord.Client) -> None:
     @bot.tree.command(name="antinuke", description="Anti-nuke protection. Staff only.")
     @app_commands.describe(action="enable / disable / status / whitelist / unwhitelist", user="User to whitelist (only for whitelist/unwhitelist)")
-    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.guild_only()
     async def antinuke(interaction: discord.Interaction, action: str, user: discord.Member | None = None):
         await interaction.response.defer(ephemeral=True)
+
+        # Manual admin check - keeps it staff-only WITHOUT hiding it from Discord
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.followup.send("❌ You need Administrator to use this.", ephemeral=True)
+            return
+
         gid = interaction.guild.id
         action = action.lower()
 

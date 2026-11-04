@@ -29,13 +29,14 @@ from bot_app.reaction_roles import handle_reaction
 from bot_app.storage import BotStore
 from bot_app.tickets import register_ticket_views
 
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logger = logging.getLogger("discord_bot")
 
+# --- PUT YOUR SERVER ID HERE ---
+GUILD_ID = 0  # <-- PASTE YOUR SERVER ID HERE, e.g. 123456789012345678
 
 class NexusBot(discord.Client):
     def __init__(self) -> None:
@@ -52,8 +53,15 @@ class NexusBot(discord.Client):
         register_commands(self, self.store)
         self.add_view(VerifyView(self.store))
         register_ticket_views(self, self.store)
+        # Global sync (slow, up to 1 hour)
         commands_synced = await self.tree.sync()
         logger.info("Synced %d slash command(s).", len(commands_synced))
+        # Guild sync (instant) - THIS is the fix for /antinuke not showing
+        if GUILD_ID != 0:
+            guild = discord.Object(id=GUILD_ID)
+            self.tree.copy_global_to(guild=guild)
+            guild_synced = await self.tree.sync(guild=guild)
+            logger.info("Synced %d guild command(s).", len(guild_synced))
 
     async def on_ready(self) -> None:
         if self.user is not None:
@@ -83,9 +91,7 @@ class NexusBot(discord.Client):
         await self.store.close()
         await super().close()
 
-
 bot = NexusBot()
-
 
 def main() -> None:
     token = os.getenv("DISCORD_BOT_TOKEN")
@@ -96,7 +102,6 @@ def main() -> None:
         raise SystemExit(1)
 
     bot.run(token, log_handler=None)
-
 
 if __name__ == "__main__":
     main()
