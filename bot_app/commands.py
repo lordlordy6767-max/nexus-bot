@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -7,6 +8,7 @@ import discord
 from discord import app_commands
 
 from bot_app.automod import register_automod
+from bot_app.antinuke import register_antinuke
 from bot_app.branding import brand_embed
 from bot_app.levels import register_levels
 from bot_app.moderation import register_moderation
@@ -24,6 +26,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     register_tickets(bot, store)
     register_reaction_roles(bot, store)
     register_levels(bot, store)
+        register_antinuke(bot)
 
     @bot.tree.command(name="ping", description="Check NEXUS V1 latency.")
     @app_commands.guild_only()
