@@ -61,20 +61,22 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"SEND ERROR by {interaction.user}: {e}")
             await interaction.followup.send(f"Couldn't send there: {e}", ephemeral=True)
 
-    @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
-    @app_commands.describe(user="Who should I greet?")
-    async def greet(interaction: discord.Interaction, user: discord.User) -> None:
+@bot.tree.command(name="greet", description="Make NEXUS greet someone.")
+@app_commands.describe(user="Who should I greet?")
+async def greet(interaction: discord.Interaction, user: discord.User) -> None:
+    try:
+        guild_name = interaction.guild.name if interaction.guild else "NEXUS"
+        await interaction.response.send_message(
+            embed=brand_embed("Hello! 👋", f"Hey {user.mention}! Welcome to {guild_name}! 🎉 Great to see you here!"),
+            allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
+        )
+    except Exception as e:
+        print(f"GREET ERROR by {interaction.user}: {e}")
         try:
-            await interaction.response.send_message(
-                embed=brand_embed("Hello! 👋", f"Hey {user.mention}! Welcome to NEXUS! 🎉 Great to see you here!"),
-                allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
-            )
-        except Exception as e:
-            print(f"GREET ERROR by {interaction.user}: {e}")
-            try:
-                await interaction.response.send_message(f"Hey {user.mention}! Welcome to NEXUS! 🎉")
-            except Exception:
-                await interaction.followup.send(f"Hey {user.mention}! Welcome!", ephemeral=True)
+            guild_name = interaction.guild.name if interaction.guild else "NEXUS"
+            await interaction.response.send_message(f"Hey {user.mention}! Welcome to {guild_name}! 🎉")
+        except Exception:
+            await interaction.followup.send(f"Hey {user.mention}! Welcome to {guild_name}!", ephemeral=True)
 
     @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.")
     @app_commands.describe(user="Who to DM?", message="What should I tell them?")
