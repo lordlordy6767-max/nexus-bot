@@ -62,7 +62,8 @@ def register_antinuke(bot: discord.Client) -> None:
         else:
             await interaction.followup.send("Use: `/antinuke enable` / `disable` / `status` / `whitelist @user` / `unwhitelist @user`", ephemeral=True)
 
-    async def on_channel_delete(channel):
+    @bot.event
+    async def on_guild_channel_delete(channel):
         guild = channel.guild
         try:
             async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_delete):
@@ -72,9 +73,9 @@ def register_antinuke(bot: discord.Client) -> None:
                 if _is_nuke(guild.id, entry.user.id):
                     await _punish(bot, guild, entry.user.id, "Deleted 3+ channels fast")
         except: pass
-    bot.add_listener(on_channel_delete, "on_guild_channel_delete")
 
-    async def on_role_delete(role):
+    @bot.event
+    async def on_guild_role_delete(role):
         guild = role.guild
         try:
             async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.role_delete):
@@ -84,9 +85,9 @@ def register_antinuke(bot: discord.Client) -> None:
                 if _is_nuke(guild.id, entry.user.id):
                     await _punish(bot, guild, entry.user.id, "Deleted 3+ roles fast")
         except: pass
-    bot.add_listener(on_role_delete, "on_guild_role_delete")
 
-    async def on_ban(guild, user):
+    @bot.event
+    async def on_member_ban(guild, user):
         try:
             async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
                 if not _enabled.get(guild.id): return
@@ -95,4 +96,3 @@ def register_antinuke(bot: discord.Client) -> None:
                 if _is_nuke(guild.id, entry.user.id):
                     await _punish(bot, guild, entry.user.id, "Banned 3+ members fast")
         except: pass
-    bot.add_listener(on_ban, "on_member_ban")
