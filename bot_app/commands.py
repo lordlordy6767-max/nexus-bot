@@ -64,8 +64,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
 @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
 @app_commands.describe(user="Who should I greet?")
 async def greet(interaction: discord.Interaction, user: discord.User) -> None:
+    guild_name = interaction.guild.name if interaction.guild else "NEXUS"
     try:
-        guild_name = interaction.guild.name if interaction.guild else "NEXUS"
         await interaction.response.send_message(
             embed=brand_embed("Hello! 👋", f"Hey {user.mention}! Welcome to {guild_name}! 🎉 Great to see you here!"),
             allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
@@ -73,10 +73,13 @@ async def greet(interaction: discord.Interaction, user: discord.User) -> None:
     except Exception as e:
         print(f"GREET ERROR by {interaction.user}: {e}")
         try:
-            guild_name = interaction.guild.name if interaction.guild else "NEXUS"
-            await interaction.response.send_message(f"Hey {user.mention}! Welcome to {guild_name}! 🎉")
-        except Exception:
-            await interaction.followup.send(f"Hey {user.mention}! Welcome to {guild_name}!", ephemeral=True)
+            msg = f"Hey {user.mention}! Welcome to {guild_name}! 🎉"
+            if not interaction.response.is_done():
+                await interaction.response.send_message(msg)
+            else:
+                await interaction.followup.send(msg)
+        except Exception as e2:
+            print(f"GREET FALLBACK ERROR: {e2}")
 
     @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.")
     @app_commands.describe(user="Who to DM?", message="What should I tell them?")
