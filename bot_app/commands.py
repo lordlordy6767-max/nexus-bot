@@ -28,6 +28,19 @@ _giveaways = {}
 def _get_bal(uid):
     return _balances.get(uid, 0)
 
+class CloseTicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.danger, custom_id="nexus_close_ticket_v2")
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Closing ticket in 5 seconds... 🔒", ephemeral=True)
+        await asyncio.sleep(5)
+        try:
+            await interaction.channel.delete()
+        except Exception as e:
+            print(f"CLOSE TICKET ERROR: {e}")
+
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -37,7 +50,7 @@ class TicketView(discord.ui.View):
         guild = interaction.guild
         overwrites = {guild.default_role: discord.PermissionOverwrite(view_channel=False), interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True)}
         ch = await guild.create_text_channel(f"ticket-{interaction.user.name}", overwrites=overwrites)
-        await ch.send(f"{interaction.user.mention} Ticket created! Staff will help you soon. Type your issue here.")
+        await ch.send(f"{interaction.user.mention} Ticket created! Staff will help you soon. Type your issue here.", view=CloseTicketView())
         await interaction.followup.send(f"Ticket created: {ch.mention} ✅", ephemeral=True)
 
 def register_commands(bot: discord.Client, store: BotStore) -> None:
@@ -291,7 +304,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     async def antiraid(interaction: discord.Interaction, mode: app_commands.Choice[str]) -> None:
         await interaction.response.send_message(embed=brand_embed("🛡️ Anti-Raid", f"Anti-Raid is now **{mode.value.upper()}**.\n\nSet by {interaction.user.mention}"), ephemeral=True)
 
-    # ===== GIVEAWAY =====
+    # ===== GIVEAWAY - FIXED =====
     @bot.tree.command(name="giveaway", description="Start a giveaway. Staff only.")
     @app_commands.describe(duration="Minutes (e.g. 5)", prize="What are you giving away?")
     @app_commands.checks.has_permissions(manage_messages=True)
@@ -302,24 +315,34 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         msg = await interaction.original_response()
         await msg.add_reaction("🎉")
         _giveaways[msg.id] = (prize, interaction.user.mention)
+        channel_id = interaction.channel_id
+        host_mention = interaction.user.mention
         await asyncio.sleep(duration * 60)
         try:
-            fresh = await interaction.channel.fetch_message(msg.id)
+            channel = bot.get_channel(channel_id)
+            if channel is None:
+                channel = await bot.fetch_channel(channel_id)
+            fresh = await channel.fetch_message(msg.id)
             users = []
             for r in fresh.reactions:
                 if str(r.emoji) == "🎉":
-                    async for u in r.users():
+                    async for u in r.users(limit=None):
                         if not u.bot:
                             users.append(u)
+            print(f"GIVEAWAY DEBUG: Found {len(users)} users for {prize}")
             if not users:
-                await interaction.channel.send(embed=brand_embed("🎁 Giveaway Ended", f"No one entered for **{prize}** 😢"))
+                await channel.send(embed=brand_embed("🎁 Giveaway Ended", f"No one entered for **{prize}** 😢"))
             else:
                 winner = random.choice(users)
-                await interaction.channel.send(embed=brand_embed("🎉 WINNER! 🎉", f"{winner.mention} won **{prize}**!\nHosted by {interaction.user.mention}"), allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False))
+                await channel.send(embed=brand_embed("🎉 WINNER! 🎉", f"{winner.mention} won **{prize}**!\nHosted by {host_mention}"), allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False))
             _giveaways.pop(msg.id, None)
         except Exception as e:
             print(f"GIVEAWAY ERROR: {e}")
-
+            try:
+                channel = bot.get_channel(channel_id) or await bot.fetch_channel(channel_id)
+                await channel.send(f"Giveaway for **{prize}** failed to pick winner: `{e}`")
+            except Exception as e2:
+                print(f"GIVEAWAY SEND ERROR: {e2}")
     # ===== ECONOMY =====
     @bot.tree.command(name="balance", description="Check your coins.")
     async def balance(interaction: discord.Interaction, user: discord.User | None = None):
