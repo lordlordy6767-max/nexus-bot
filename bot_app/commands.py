@@ -49,63 +49,79 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
                 roles=False,
                 everyone=False,
             ),
-        )
+        
 @bot.tree.command(name="send", description="Make NEXUS send a message for you.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(message="What should I send?", channel="Where to send it? Leave empty to send here.")
     async def send(interaction: discord.Interaction, message: str, channel: discord.TextChannel | None = None) -> None:
+        await interaction.response.defer(ephemeral=True)
         target = channel or interaction.channel
-        await target.send(message)
-        await interaction.response.send_message(f"Sent to {target.mention}! ✅", ephemeral=True)
+        try:
+            await target.send(message)
+            await interaction.followup.send(f"Sent to {target.mention}! ✅", ephemeral=True)
+        except Exception as e:
+            print(f"SEND ERROR by {interaction.user}: {e}")
+            await interaction.followup.send(f"Couldn't send there: {e}", ephemeral=True)
 
     @bot.tree.command(name="greet", description="Make NEXUS greet someone.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(user="Who should I greet?")
     async def greet(interaction: discord.Interaction, user: discord.User) -> None:
-        await interaction.response.send_message(
-            embed=brand_embed(
-                "Hello! 👋",
-                f"Hey {user.mention}! Welcome to NEXUS! 🎉 Great to see you here!",
-            ),
-            allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
-        )
+        try:
+            await interaction.response.send_message(
+                embed=brand_embed("Hello! 👋", f"Hey {user.mention}! Welcome to NEXUS! 🎉 Great to see you here!"),
+                allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
+            )
+        except Exception as e:
+            print(f"GREET ERROR by {interaction.user}: {e}")
+            try:
+                await interaction.response.send_message(f"Hey {user.mention}! Welcome to NEXUS! 🎉", allowed_mentions=discord.AllowedMentions(users=True))
+            except:
+                await interaction.followup.send(f"Hey {user.mention}! Welcome!", ephemeral=True)
 
     @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(user="Who to DM?", message="What should I tell them?")
     async def dm(interaction: discord.Interaction, user: discord.User, message: str) -> None:
+        await interaction.response.defer(ephemeral=True)
         try:
             guild_name = interaction.guild.name if interaction.guild else "a DM"
             await user.send(f"💌 You got a message from **{interaction.user.display_name}** in **{guild_name}**:\n\n> {message}")
-            await interaction.response.send_message(f"DM sent to {user.mention}! 🤫", ephemeral=True)
+            await interaction.followup.send(f"DM sent to {user.mention}! 🤫", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message(f"Couldn't DM {user.mention} - they have DMs closed.", ephemeral=True)
+            await interaction.followup.send(f"Couldn't DM {user.mention} - they have DMs closed.", ephemeral=True)
+        except Exception as e:
+            print(f"DM ERROR by {interaction.user}: {e}")
+            await interaction.followup.send(f"Couldn't DM: {e}", ephemeral=True)
 
     @bot.tree.command(name="shoutout", description="Hype someone up!", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     @app_commands.describe(user="Who deserves a shoutout?", reason="Why are they awesome?")
     async def shoutout(interaction: discord.Interaction, user: discord.User, reason: str) -> None:
-        await interaction.response.send_message(
-            embed=brand_embed(
-                "🔥 SHOUTOUT! 🔥",
-                f"EVERYONE GIVE IT UP FOR {user.mention}!\n\n**{reason}** 🎉",
-            ),
-            allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
-        )
+        try:
+            await interaction.response.send_message(
+                embed=brand_embed("🔥 SHOUTOUT! 🔥", f"EVERYONE GIVE IT UP FOR {user.mention}!\n\n**{reason}** 🎉"),
+                allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False),
+            )
+        except Exception as e:
+            print(f"SHOUTOUT ERROR by {interaction.user}: {e}")
+            try:
+                await interaction.response.send_message(f"EVERYONE GIVE IT UP FOR {user.mention}! **{reason}** 🎉")
+            except:
+                await interaction.followup.send(f"Shoutout for {user.mention}!", ephemeral=True)
 
     @bot.tree.command(name="goodmorning", description="Send a good morning message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     async def goodmorning(interaction: discord.Interaction) -> None:
-        await interaction.response.send_message(
-            embed=brand_embed(
-                "☀️ Good Morning NEXUS!",
-                f"Good morning everyone! {interaction.user.mention} says rise and shine! ☕ Have an amazing day! ✨",
-            )
-        )
+        try:
+            await interaction.response.send_message(embed=brand_embed("☀️ Good Morning NEXUS!", f"Good morning everyone! {interaction.user.mention} says rise and shine! ☕ Have an amazing day! ✨"))
+        except Exception as e:
+            print(f"GOODMORNING ERROR: {e}")
+            await interaction.response.send_message(f"Good morning everyone! {interaction.user.mention} says rise and shine! ☕")
 
     @bot.tree.command(name="goodnight", description="Send a good night message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
     async def goodnight(interaction: discord.Interaction) -> None:
-        await interaction.response.send_message(
-            embed=brand_embed(
-                "🌙 Good Night NEXUS!",
-                f"Good night everyone! {interaction.user.mention} says sweet dreams! 😴 See you tomorrow! 💤",
-            )
-        )
+        try:
+            await interaction.response.send_message(embed=brand_embed("🌙 Good Night NEXUS!", f"Good night everyone! {interaction.user.mention} says sweet dreams! 😴 See you tomorrow! 💤"))
+        except Exception as e:
+            print(f"GOODNIGHT ERROR: {e}")
+            await interaction.response.send_message(f"Good night everyone! {interaction.user.mention} says sweet dreams! 😴")
+    
 
 async def handle_app_command_error(
     interaction: discord.Interaction,
