@@ -231,7 +231,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"UNBAN ERROR: {e}")
             await interaction.followup.send(f"Couldn't unban: {e}\nMake sure you copied the correct User ID.", ephemeral=True)
 
-    # ===== SECURITY PACK =====
+    # ===== SECURITY PACK - FIXED =====
 
     @bot.tree.command(name="lock", description="Lock the current channel. Staff only.")
     @app_commands.describe(channel="Which channel to lock? (leave empty for this channel)")
@@ -239,6 +239,13 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     @app_commands.guild_only()
     async def lock(interaction: discord.Interaction, channel: discord.TextChannel | None = None) -> None:
         target = channel or interaction.channel
+        overwrite = target.overwrites_for(interaction.guild.default_role)
+        if overwrite.send_messages is False:
+            await interaction.response.send_message(
+                embed=brand_embed("🔒 Already Locked", f"{target.mention} is already locked."),
+                ephemeral=True
+            )
+            return
         try:
             await target.set_permissions(interaction.guild.default_role, send_messages=False)
             await interaction.response.send_message(
@@ -255,8 +262,15 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     @app_commands.guild_only()
     async def unlock(interaction: discord.Interaction, channel: discord.TextChannel | None = None) -> None:
         target = channel or interaction.channel
+        overwrite = target.overwrites_for(interaction.guild.default_role)
+        if overwrite.send_messages is not False:
+            await interaction.response.send_message(
+                embed=brand_embed("🔓 Already Unlocked", f"{target.mention} is already unlocked."),
+                ephemeral=True
+            )
+            return
         try:
-            await target.set_permissions(interaction.guild.default_role, send_messages=True)
+            await target.set_permissions(interaction.guild.default_role, send_messages=None)
             await interaction.response.send_message(
                 embed=brand_embed("🔓 Channel Unlocked", f"{target.mention} is now unlocked.\n\nUnlocked by {interaction.user.mention}"),
                 ephemeral=True
@@ -273,12 +287,21 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         try:
             count = 0
             for ch in interaction.guild.text_channels:
+                overwrite = ch.overwrites_for(interaction.guild.default_role)
+                if overwrite.send_messages is False:
+                    continue
                 await ch.set_permissions(interaction.guild.default_role, send_messages=False)
                 count += 1
-            await interaction.followup.send(
-                embed=brand_embed("🚨 SERVER LOCKDOWN", f"Locked **{count}** channels.\n\nActivated by {interaction.user.mention}"),
-                ephemeral=True
-            )
+            if count == 0:
+                await interaction.followup.send(
+                    embed=brand_embed("🚨 Already in Lockdown", "All channels are already locked."),
+                    ephemeral=True
+                )
+            else:
+                await interaction.followup.send(
+                    embed=brand_embed("🚨 SERVER LOCKDOWN", f"Locked **{count}** channels.\n\nActivated by {interaction.user.mention}"),
+                    ephemeral=True
+                )
         except Exception as e:
             print(f"LOCKDOWN ERROR: {e}")
             await interaction.followup.send(f"Lockdown failed: {e}", ephemeral=True)
@@ -291,12 +314,21 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         try:
             count = 0
             for ch in interaction.guild.text_channels:
-                await ch.set_permissions(interaction.guild.default_role, send_messages=True)
+                overwrite = ch.overwrites_for(interaction.guild.default_role)
+                if overwrite.send_messages is not False:
+                    continue
+                await ch.set_permissions(interaction.guild.default_role, send_messages=None)
                 count += 1
-            await interaction.followup.send(
-                embed=brand_embed("✅ SERVER UNLOCKED", f"Unlocked **{count}** channels.\n\nUnlocked by {interaction.user.mention}"),
-                ephemeral=True
-            )
+            if count == 0:
+                await interaction.followup.send(
+                    embed=brand_embed("✅ Already Unlocked", "All channels are already unlocked."),
+                    ephemeral=True
+                )
+            else:
+                await interaction.followup.send(
+                    embed=brand_embed("✅ SERVER UNLOCKED", f"Unlocked **{count}** channels.\n\nUnlocked by {interaction.user.mention}"),
+                    ephemeral=True
+                )
         except Exception as e:
             print(f"UNLOCKDOWN ERROR: {e}")
             await interaction.followup.send(f"Unlockdown failed: {e}", ephemeral=True)
