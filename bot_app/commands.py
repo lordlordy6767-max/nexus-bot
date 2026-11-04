@@ -26,7 +26,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     register_tickets(bot, store)
     register_reaction_roles(bot, store)
     register_levels(bot, store)
-        register_antinuke(bot)
+    register_antinuke(bot)
 
     @bot.tree.command(name="ping", description="Check NEXUS V1 latency.")
     @app_commands.guild_only()
