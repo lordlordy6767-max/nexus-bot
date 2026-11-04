@@ -64,9 +64,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
     @app_commands.describe(user="Who should I greet?")
     async def greet(interaction: discord.Interaction, user: discord.User) -> None:
-                guild = interaction.guild
-        guild_name = guild.name if guild and guild.name else "this server"
-        print(f"GREET DEBUG guild={guild} name={guild_name!r}")
+        guild_name = interaction.guild.name if interaction.guild and interaction.guild.name else "this server"
         try:
             await interaction.response.send_message(
                 embed=brand_embed("Hello! 👋", f"Hey {user.mention}! Welcome to {guild_name}! 🎉 Great to see you here!"),
