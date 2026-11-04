@@ -16,7 +16,6 @@ from bot_app.tickets import register_tickets
 
 logger = logging.getLogger("discord_bot.commands")
 
-
 def register_commands(bot: discord.Client, store: BotStore) -> None:
     register_onboarding(bot, store)
     register_automod(bot, store)
@@ -49,9 +48,9 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
                 roles=False,
                 everyone=False,
             ),
-        
-@bot.tree.command(name="send", description="Make NEXUS send a message for you.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
-    @app_commands.describe(message="What should I send?", channel="Where to send it? Leave empty to send here.")
+        )
+
+    @bot.tree.command(name="send", description="Make NEXUS send a message for you.")
     async def send(interaction: discord.Interaction, message: str, channel: discord.TextChannel | None = None) -> None:
         await interaction.response.defer(ephemeral=True)
         target = channel or interaction.channel
@@ -62,7 +61,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"SEND ERROR by {interaction.user}: {e}")
             await interaction.followup.send(f"Couldn't send there: {e}", ephemeral=True)
 
-    @bot.tree.command(name="greet", description="Make NEXUS greet someone.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
+    @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
     @app_commands.describe(user="Who should I greet?")
     async def greet(interaction: discord.Interaction, user: discord.User) -> None:
         try:
@@ -73,11 +72,11 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         except Exception as e:
             print(f"GREET ERROR by {interaction.user}: {e}")
             try:
-                await interaction.response.send_message(f"Hey {user.mention}! Welcome to NEXUS! 🎉", allowed_mentions=discord.AllowedMentions(users=True))
-            except:
+                await interaction.response.send_message(f"Hey {user.mention}! Welcome to NEXUS! 🎉")
+            except Exception:
                 await interaction.followup.send(f"Hey {user.mention}! Welcome!", ephemeral=True)
 
-    @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
+    @bot.tree.command(name="dm", description="Make NEXUS DM someone a secret message.")
     @app_commands.describe(user="Who to DM?", message="What should I tell them?")
     async def dm(interaction: discord.Interaction, user: discord.User, message: str) -> None:
         await interaction.response.defer(ephemeral=True)
@@ -91,7 +90,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"DM ERROR by {interaction.user}: {e}")
             await interaction.followup.send(f"Couldn't DM: {e}", ephemeral=True)
 
-    @bot.tree.command(name="shoutout", description="Hype someone up!", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
+    @bot.tree.command(name="shoutout", description="Hype someone up!")
     @app_commands.describe(user="Who deserves a shoutout?", reason="Why are they awesome?")
     async def shoutout(interaction: discord.Interaction, user: discord.User, reason: str) -> None:
         try:
@@ -103,10 +102,10 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"SHOUTOUT ERROR by {interaction.user}: {e}")
             try:
                 await interaction.response.send_message(f"EVERYONE GIVE IT UP FOR {user.mention}! **{reason}** 🎉")
-            except:
+            except Exception:
                 await interaction.followup.send(f"Shoutout for {user.mention}!", ephemeral=True)
 
-    @bot.tree.command(name="goodmorning", description="Send a good morning message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
+    @bot.tree.command(name="goodmorning", description="Send a good morning message.")
     async def goodmorning(interaction: discord.Interaction) -> None:
         try:
             await interaction.response.send_message(embed=brand_embed("☀️ Good Morning NEXUS!", f"Good morning everyone! {interaction.user.mention} says rise and shine! ☕ Have an amazing day! ✨"))
@@ -114,14 +113,13 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"GOODMORNING ERROR: {e}")
             await interaction.response.send_message(f"Good morning everyone! {interaction.user.mention} says rise and shine! ☕")
 
-    @bot.tree.command(name="goodnight", description="Send a good night message.", integration_types=[discord.IntegrationType.guild_install, discord.IntegrationType.user_install], contexts=[discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm, discord.InteractionContextType.private_channel])
+    @bot.tree.command(name="goodnight", description="Send a good night message.")
     async def goodnight(interaction: discord.Interaction) -> None:
         try:
             await interaction.response.send_message(embed=brand_embed("🌙 Good Night NEXUS!", f"Good night everyone! {interaction.user.mention} says sweet dreams! 😴 See you tomorrow! 💤"))
         except Exception as e:
             print(f"GOODNIGHT ERROR: {e}")
             await interaction.response.send_message(f"Good night everyone! {interaction.user.mention} says sweet dreams! 😴")
-    
 
 async def handle_app_command_error(
     interaction: discord.Interaction,
