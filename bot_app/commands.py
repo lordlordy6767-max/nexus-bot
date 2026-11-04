@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -232,6 +231,90 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             print(f"UNBAN ERROR: {e}")
             await interaction.followup.send(f"Couldn't unban: {e}\nMake sure you copied the correct User ID.", ephemeral=True)
 
+    # ===== SECURITY PACK =====
+
+    @bot.tree.command(name="lock", description="Lock the current channel. Staff only.")
+    @app_commands.describe(channel="Which channel to lock? (leave empty for this channel)")
+    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.guild_only()
+    async def lock(interaction: discord.Interaction, channel: discord.TextChannel | None = None) -> None:
+        target = channel or interaction.channel
+        try:
+            await target.set_permissions(interaction.guild.default_role, send_messages=False)
+            await interaction.response.send_message(
+                embed=brand_embed("🔒 Channel Locked", f"{target.mention} is now locked.\n\nLocked by {interaction.user.mention}"),
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"LOCK ERROR: {e}")
+            await interaction.response.send_message(f"Couldn't lock: {e}", ephemeral=True)
+
+    @bot.tree.command(name="unlock", description="Unlock the current channel. Staff only.")
+    @app_commands.describe(channel="Which channel to unlock? (leave empty for this channel)")
+    @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.guild_only()
+    async def unlock(interaction: discord.Interaction, channel: discord.TextChannel | None = None) -> None:
+        target = channel or interaction.channel
+        try:
+            await target.set_permissions(interaction.guild.default_role, send_messages=True)
+            await interaction.response.send_message(
+                embed=brand_embed("🔓 Channel Unlocked", f"{target.mention} is now unlocked.\n\nUnlocked by {interaction.user.mention}"),
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"UNLOCK ERROR: {e}")
+            await interaction.response.send_message(f"Couldn't unlock: {e}", ephemeral=True)
+
+    @bot.tree.command(name="lockdown", description="Lock ALL channels in the server. Admin only.")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.guild_only()
+    async def lockdown(interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            count = 0
+            for ch in interaction.guild.text_channels:
+                await ch.set_permissions(interaction.guild.default_role, send_messages=False)
+                count += 1
+            await interaction.followup.send(
+                embed=brand_embed("🚨 SERVER LOCKDOWN", f"Locked **{count}** channels.\n\nActivated by {interaction.user.mention}"),
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"LOCKDOWN ERROR: {e}")
+            await interaction.followup.send(f"Lockdown failed: {e}", ephemeral=True)
+
+    @bot.tree.command(name="unlockdown", description="Unlock ALL channels in the server. Admin only.")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.guild_only()
+    async def unlockdown(interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            count = 0
+            for ch in interaction.guild.text_channels:
+                await ch.set_permissions(interaction.guild.default_role, send_messages=True)
+                count += 1
+            await interaction.followup.send(
+                embed=brand_embed("✅ SERVER UNLOCKED", f"Unlocked **{count}** channels.\n\nUnlocked by {interaction.user.mention}"),
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"UNLOCKDOWN ERROR: {e}")
+            await interaction.followup.send(f"Unlockdown failed: {e}", ephemeral=True)
+
+    @bot.tree.command(name="antiraid", description="Toggle anti-raid protection. Admin only.")
+    @app_commands.describe(mode="Turn anti-raid on or off?")
+    @app_commands.choices(mode=[
+        app_commands.Choice(name="ON", value="on"),
+        app_commands.Choice(name="OFF", value="off"),
+    ])
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.guild_only()
+    async def antiraid(interaction: discord.Interaction, mode: app_commands.Choice[str]) -> None:
+        await interaction.response.send_message(
+            embed=brand_embed("🛡️ Anti-Raid", f"Anti-Raid is now **{mode.value.upper()}**.\n\nSet by {interaction.user.mention}"),
+            ephemeral=True
+        )
+
     @bot.tree.command(name="help", description="See all NEXUS commands.")
     async def help_cmd(interaction: discord.Interaction) -> None:
         text = (
@@ -242,7 +325,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             "**📢 Staff**\n"
             "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
             "**🛡️ Security**\n"
-"`/antinuke`\n\n"
+            "`/antinuke` `/lock` `/unlock` `/lockdown` `/unlockdown` `/antiraid`\n\n"
             "**⚙️ Setup / System**\n"
             "`/ping` `/verify` `/ticket-setup` `/reaction-role-setup` `/welcome set` `/list-roles` `/automod`\n\n"
             "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
