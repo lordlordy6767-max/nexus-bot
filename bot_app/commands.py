@@ -241,6 +241,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             "`/poll` `/rank` `/leaderboard`\n\n"
             "**📢 Staff**\n"
             "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
+            "**🛡️ Security**\n"
+"`/antinuke`\n\n"
             "**⚙️ Setup / System**\n"
             "`/ping` `/verify` `/ticket-setup` `/reaction-role-setup` `/welcome set` `/list-roles` `/automod`\n\n"
             "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
