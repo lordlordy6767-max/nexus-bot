@@ -247,61 +247,59 @@ def register_tickets(bot: discord.Client, store: BotStore) -> None:
     @app_commands.guild_only()
     @app_commands.default_permissions(manage_channels=True)
     @app_commands.checks.has_permissions(manage_channels=True)
+    @app_commands.describe(category="Category where tickets will be created", support_role_id="Paste Support Role ID from /list-roles")
     async def ticket_setup(
         interaction: discord.Interaction,
         category: discord.CategoryChannel,
-        support_role: discord.Role | None = None,
+        support_role_id: str | None = None,
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         guild = interaction.guild
         channel = interaction.channel
         if guild is None or channel is None or not hasattr(channel, "send"):
-            await interaction.response.send_message(
-                "Run this command in a server text channel.",
-                ephemeral=True,
-            )
+            await interaction.followup.send("Run this in a server text channel.", ephemeral=True)
             return
-
+        support_role = None
+        if support_role_id:
+            try:
+                support_role = guild.get_role(int(support_role_id.strip()))
+            except ValueError:
+                support_role = None
+            if support_role is None:
+                await interaction.followup.send("Invalid Role ID. Run /list-roles and copy the ID.", ephemeral=True)
+                return
         bot_member = guild.get_member(bot.user.id) if bot.user else None
         if bot_member is None or not bot_member.guild_permissions.manage_channels:
-            await interaction.response.send_message(
-                "I need the Manage Channels permission to configure tickets.",
-                ephemeral=True,
-            )
+            await interaction.followup.send("I need Manage Channels permission.", ephemeral=True)
             return
-        if support_role is not None:
-            actor = interaction.user
-            if (
-                isinstance(actor, discord.Member)
-                and actor.id != guild.owner_id
-                and support_role >= actor.top_role
-            ):
-                await interaction.response.send_message(
-                    "Choose a support role below your highest role.",
-                    ephemeral=True,
-                )
-                return
-
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        await store.set_settings(
-            guild.id,
-            ticket_category_id=category.id,
-            support_role_id=support_role.id if support_role else None,
-        )
+        try:
+            await store.set_settings(
+                guild.id,
+                ticket_category_id=category.id,
+                support_role_id=support_role.id if support_role else None,
+            )
+        except Exception as e:
+            await interaction.followup.send(f"Could not save settings: {e}", ephemeral=True)
+            return
         await channel.send(
-            embed=brand_embed(
-                "NEXUS V1 Support",
-                "Need help? Open a private ticket and our team will assist you.",
-                color=PURPLE,
-            ),
+            embed=brand_embed("NEXUS V1 Support", "Need help? Open a private ticket and our team will assist you.", color=PURPLE),
             view=TicketPanelView(store),
             allowed_mentions=discord.AllowedMentions.none(),
         )
-        await interaction.followup.send(
-            "Ticket panel deployed.",
-            ephemeral=True,
-        )
+        await interaction.followup.send("Ticket panel deployed.", ephemeral=True)
 
-
+    @bot.tree.command(name="list-roles", description="List roles + IDs to use in ticket-setup")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(manage_channels=True)
+    async def list_roles(interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        guild = interaction.guild
+        if guild is None:
+            return
+        lines = [f"{r.name} - {r.id}" for r in guild.roles if not r.is_default()]
+        text = "\n".join(lines[:30])
+        await interaction.followup.send(f"Copy the ID:\n```{text}```", ephemeral=True)
+        
 def register_ticket_views(bot: discord.Client, store: BotStore) -> None:
     bot.add_view(TicketPanelView(store))
     bot.add_view(TicketCloseView(store))
