@@ -392,28 +392,42 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         await interaction.response.send_message(embed=brand_embed("🎫 NEXUS Support", "Need help? Click below to open a ticket!\n\nOur staff will assist you ASAP."), view=TicketView())
 
     @bot.tree.command(name="help", description="See all NEXUS commands.")
-    async def help_cmd(interaction: discord.Interaction) -> None:
-        text = (
-            "**👋 Welcome / Fun**\n"
-            "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball`\n\n"
-            "**📊 Community**\n"
-            "`/poll` `/rank` `/leaderboard`\n\n"
-            "**📢 Staff**\n"
-            "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
-            "**🛡️ Security**\n"
-            "`/antinuke` `/lock` `/unlock` `/lockdown` `/unlockdown` `/antiraid`\n\n"
-            "**🎁 Giveaway**\n"
-            "`/giveaway`\n\n"
-            "**💰 Economy**\n"
-            "`/balance` `/daily` `/work` `/pay`\n\n"
-            "**🎫 Tickets**\n"
-            "`/ticket-panel`\n\n"
-            "**⚙️ Setup / System**\n"
-            "`/ping` `/verify` `/ticket-setup` `/reaction-role-setup` `/welcome set` `/list-roles` `/automod`\n\n"
-            "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
-        )
-        await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
-
+async def help_cmd(interaction: discord.Interaction) -> None:
+    text = (
+        "**👋 Welcome / Fun**\n"
+        "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball`\n\n"
+        "**📊 Community**\n"
+        "`/poll` `/rank` `/leaderboard`\n\n"
+        "**📢 Staff**\n"
+        "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
+        "**🛡️ Security**\n"
+        "`/antinuke` `/lock` `/unlock` `/lockdown` `/unlockdown` `/antiraid`\n\n"
+        "**🎁 Giveaway**\n"
+        "`/giveaway`\n\n"
+        "**💰 Economy**\n"
+        "`/balance` `/daily` `/work` `/pay`\n\n"
+        "**🎫 Tickets**\n"
+        "`/ticket-panel`\n\n"
+        "**⚙️ Setup / System**\n"
+        "`/ping` `/verify` `/ticket-setup` `/list-roles` `/welcome set` `/welcome disable` `/automod configure` `/automod status`\n\n"
+        "**🎭 Reaction Roles**\n"
+        "`/reaction-role-setup` - Single role panel\n"
+        "`/reaction-roles-setup` - Multi role panel (up to 10 roles)\n\n"
+        "**🏷️ Tag Me - Tag @NEXUS V1 + say:**\n"
+        "`who is the king` - Find out who made me 👑\n"
+        "`who is the goat` - 🐐\n"
+        "`roast me` - Get roasted 💀\n"
+        "`love you` - ❤️\n"
+        "`are you real` - 🤖\n"
+        "`sing` - 🎤\n"
+        "`are you smart` - 🧠\n"
+        "`marry me` - 💍\n"
+        "`ping` - 🏓\n"
+        "`hello` - 👋\n"
+        "`list` - See all tag commands\n\n"
+        "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news! Tag me + `list` for quick tag commands!"
+    )
+    await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
 async def handle_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.MissingPermissions):
         message = "You do not have permission to use that command."
