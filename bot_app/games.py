@@ -1,33 +1,32 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
 import random
-import json
-import os
+import inspect
 
-BALANCE_FILE = "balances.json"
+def register_games_commands(bot, store):
 
-def load_balances():
-    if not os.path.exists(BALANCE_FILE):
-        return {}
-    with open(BALANCE_FILE, "r") as f:
-        return json.load(f)
+    async def get_bal(user_id):
+        res = store.get_balance(user_id)
+        if inspect.isawaitable(res):
+            res = await res
+        return res
 
-def save_balances(data):
-    with open(BALANCE_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-def get_balance(user_id):
-    data = load_balances()
-    return data.get(str(user_id), 0)
-
-def add_coins(user_id, amount):
-    data = load_balances()
-    data[str(user_id)] = data.get(str(user_id), 0) + amount
-    save_balances(data)
-    return data[str(user_id)]
-
-def setup_games(bot: commands.Bot):
+    async def add(user_id, amount):
+        # try add_coins, fallback to update_balance / set_balance
+        if hasattr(store, "add_coins"):
+            res = store.add_coins(user_id, amount)
+        elif hasattr(store, "update_balance"):
+            res = store.update_balance(user_id, amount)
+        else:
+            # last fallback: get + set
+            bal = await get_bal(user_id)
+            res = store.set_balance(user_id, bal + amount)
+        if inspect.isawaitable(res):
+            res = await res
+        # if method returns None, fetch balance
+        if res is None:
+            res = await get_bal(user_id)
+        return res
 
     # ---------- COINFLIP ----------
     @bot.tree.command(name="coinflip", description="Flip a coin - bet coins!")
@@ -41,7 +40,7 @@ def setup_games(bot: commands.Bot):
             await interaction.response.send_message("Bet must be more than 0!", ephemeral=True)
             return
 
-        bal = get_balance(interaction.user.id)
+        bal = await get_bal(interaction.user.id)
         if bet > bal:
             await interaction.response.send_message(f"You only have {bal} coins! 💰", ephemeral=True)
             return
@@ -50,13 +49,13 @@ def setup_games(bot: commands.Bot):
         emoji = "🪙" if result == "heads" else "👑"
 
         if result == choice:
-            new_bal = add_coins(interaction.user.id, bet)
+            new_bal = await add(interaction.user.id, bet)
             embed = discord.Embed(title="🎉 YOU WON!", color=discord.Color.green())
             embed.add_field(name="Result", value=f"{emoji} {result.upper()}", inline=False)
             embed.add_field(name="Won", value=f"+{bet} coins", inline=True)
             embed.add_field(name="New Balance", value=f"{new_bal} coins", inline=True)
         else:
-            new_bal = add_coins(interaction.user.id, -bet)
+            new_bal = await add(interaction.user.id, -bet)
             embed = discord.Embed(title="💔 YOU LOST!", color=discord.Color.red())
             embed.add_field(name="Result", value=f"{emoji} {result.upper()}", inline=False)
             embed.add_field(name="Lost", value=f"-{bet} coins", inline=True)
@@ -110,7 +109,7 @@ def setup_games(bot: commands.Bot):
         if bet <= 0:
             await interaction.response.send_message("Bet must be more than 0!", ephemeral=True)
             return
-        bal = get_balance(interaction.user.id)
+        bal = await get_bal(interaction.user.id)
         if bet > bal:
             await interaction.response.send_message(f"You only have {bal} coins! 💰", ephemeral=True)
             return
@@ -123,15 +122,15 @@ def setup_games(bot: commands.Bot):
 
         if r1 == r2 == r3:
             win = bet * 5
-            new_bal = add_coins(interaction.user.id, win)
+            new_bal = await add(interaction.user.id, win)
             embed.add_field(name="JACKPOT! 🎉", value=f"+{win} coins! New Balance: {new_bal}", inline=False)
             embed.color = discord.Color.gold()
         elif r1 == r2 or r2 == r3 or r1 == r3:
             win = bet * 2
-            new_bal = add_coins(interaction.user.id, win)
+            new_bal = await add(interaction.user.id, win)
             embed.add_field(name="Nice! You got 2 matching!", value=f"+{win} coins! New Balance: {new_bal}", inline=False)
         else:
-            new_bal = add_coins(interaction.user.id, -bet)
+            new_bal = await add(interaction.user.id, -bet)
             embed.add_field(name="No match 😢", value=f"-{bet} coins! New Balance: {new_bal}", inline=False)
 
         await interaction.response.send_message(embed=embed)
@@ -166,7 +165,7 @@ def setup_games(bot: commands.Bot):
                     await btn_interaction.response.send_message("Not your question!", ephemeral=True)
                     return
                 if self.index == self.correct:
-                    new_bal = add_coins(interaction.user.id, 100)
+                    new_bal = await add(interaction.user.id, 100)
                     await btn_interaction.response.send_message(f"✅ CORRECT! +100 coins! New Balance: {new_bal} 🎉")
                 else:
                     await btn_interaction.response.send_message(f"❌ WRONG! Correct was: **{options[self.correct]}**")
