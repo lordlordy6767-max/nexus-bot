@@ -393,7 +393,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
 
     @bot.tree.command(name="help", description="See all NEXUS commands.")
     async def help_cmd(interaction: discord.Interaction) -> None:
-    text = (
+        text = (
         "**👋 Welcome / Fun**\n"
         "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball`\n\n"
         "**📊 Community**\n"
@@ -427,7 +427,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         "`list` - See all tag commands\n\n"
         "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news! Tag me + `list` for quick tag commands!"
     )
-    await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
+        await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
 async def handle_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.MissingPermissions):
         message = "You do not have permission to use that command."
