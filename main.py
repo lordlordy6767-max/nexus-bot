@@ -28,6 +28,7 @@ from bot_app.onboarding import VerifyView, handle_member_join
 from bot_app.reaction_roles import handle_reaction
 from bot_app.storage import BotStore
 from bot_app.tickets import register_ticket_views
+from bot_app.tag_replies import handle_tag_reply
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,6 +72,8 @@ class NexusBot(discord.Client):
         await handle_member_join(self.store, member)
 
     async def on_message(self, message: discord.Message) -> None:
+        if await handle_tag_reply(self, message):
+            return
         if await handle_automod(self.store, message):
             return
         await handle_level_message(self.store, message)
