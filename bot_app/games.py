@@ -1,7 +1,12 @@
 import discord
 from discord import app_commands
 import random
+import aiohttp
 from bot_app.wallet import get_bal, add
+try:
+    from bot_app.wallet import _balances
+except Exception:
+    _balances = {}
 
 def register_games_commands(bot, store):
 
@@ -131,3 +136,182 @@ def register_games_commands(bot, store):
         embed = discord.Embed(title="🧠 TRIVIA", description=q, color=discord.Color.teal())
         embed.set_footer(text="Win 100 coins if correct!")
         await interaction.response.send_message(embed=embed, view=view)
+
+    @bot.tree.command(name="memes", description="Get a random meme 😂")
+    async def memes(interaction: discord.Interaction):
+        await interaction.response.defer()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://meme-api.com/gimme") as r:
+                    data = await r.json()
+            embed = discord.Embed(title=data.get("title", "MEME 😂"), color=discord.Color.blurple())
+            embed.set_image(url=data.get("url"))
+            embed.set_footer(text=f"From r/{data.get('subreddit', 'memes')} | 👍 {data.get('ups', 0)}")
+            await interaction.followup.send(embed=embed)
+        except Exception:
+            await interaction.followup.send("Meme API is down right now 😢 Try again in a sec!")
+
+    # ===== MY IDEAS =====
+
+    SHOP_ITEMS = {
+        "mysterybox": {"name": "🎁 Mystery Box", "price": 500, "desc": "Random reward 100-1000 coins!"},
+        "vip": {"name": "👑 VIP Role", "price": 5000, "desc": "Get VIP role in server"},
+        "color": {"name": "🎨 Color Role", "price": 2000, "desc": "Get a cool color role"},
+        "boost": {"name": "🚀 Daily Boost", "price": 1000, "desc": "Bragging rights - you are boosted!"},
+    }
+
+    @bot.tree.command(name="shop", description="See the shop 🛒")
+    async def shop(interaction: discord.Interaction):
+        embed = discord.Embed(title="🛒 NEXUS SHOP", color=discord.Color.gold())
+        bal = get_bal(interaction.user.id)
+        embed.add_field(name="Your Balance", value=f"{bal} coins 💰", inline=False)
+        for key, item in SHOP_ITEMS.items():
+            embed.add_field(name=f"{item['name']} - {item['price']} coins", value=f"`/buy {key}` - {item['desc']}", inline=False)
+        await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="buy", description="Buy something from the shop")
+    @app_commands.describe(item="mysterybox, vip, color, boost")
+    async def buy(interaction: discord.Interaction, item: str):
+        item = item.lower()
+        if item not in SHOP_ITEMS:
+            await interaction.response.send_message("That item doesn't exist! Do `/shop` to see items.", ephemeral=True)
+            return
+        data = SHOP_ITEMS[item]
+        bal = get_bal(interaction.user.id)
+        if bal < data["price"]:
+            await interaction.response.send_message(f"You need {data['price']} coins! You have {bal} 💰", ephemeral=True)
+            return
+        if item == "mysterybox":
+            reward = random.randint(100, 1000)
+            new_bal = add(interaction.user.id, -data["price"] + reward)
+            await interaction.response.send_message(f"🎁 You opened Mystery Box and got **{reward} coins**! New Balance: {new_bal}")
+            return
+        if item in ["vip", "color"]:
+            role_name = "VIP" if item == "vip" else "Color"
+            role = discord.utils.get(interaction.guild.roles, name=role_name)
+            if role:
+                try:
+                    await interaction.user.add_roles(role)
+                except Exception:
+                    pass
+            new_bal = add(interaction.user.id, -data["price"])
+            await interaction.response.send_message(f"✅ You bought {data['name']}! New Balance: {new_bal} 🎉")
+            return
+        new_bal = add(interaction.user.id, -data["price"])
+        await interaction.response.send_message(f"✅ You bought {data['name']}! New Balance: {new_bal} 🚀")
+
+    @bot.tree.command(name="topmoney", description="Top 10 richest in NEXUS 💰")
+    async def topmoney(interaction: discord.Interaction):
+        if not _balances:
+            await interaction.response.send_message("No one has coins yet! Do /daily first 💰")
+            return
+        sorted_bal = sorted(_balances.items(), key=lambda x: x[1], reverse=True)[:10]
+        embed = discord.Embed(title="🏆 RICHEST IN NEXUS", color=discord.Color.gold())
+        lines = []
+        for i, (uid, bal) in enumerate(sorted_bal, 1):
+            member = interaction.guild.get_member(int(uid))
+            name = member.display_name if member else f"User {uid}"
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"#{i}"
+            lines.append(f"{medal} **{name}** - {bal} coins")
+        embed.description = "\n".join(lines)
+        my_bal = get_bal(interaction.user.id)
+        all_sorted = sorted(_balances.items(), key=lambda x: x[1], reverse=True)
+        my_rank = next((i+1 for i, (uid, _) in enumerate(all_sorted) if str(uid) == str(interaction.user.id)), 0)
+        embed.set_footer(text=f"You are #{my_rank} with {my_bal} coins")
+        await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="blackjack", description="Play Blackjack vs dealer 🃏")
+    @app_commands.describe(bet="How many coins to bet")
+    async def blackjack(interaction: discord.Interaction, bet: int):
+        if bet <= 0:
+            await interaction.response.send_message("Bet must be more than 0!", ephemeral=True)
+            return
+        bal = get_bal(interaction.user.id)
+        if bet > bal:
+            await interaction.response.send_message(f"You only have {bal} coins! 💰 Do /daily first!", ephemeral=True)
+            return
+
+        def draw():
+            return random.choice([2,3,4,5,6,7,8,9,10,10,10,10,11])
+        def total(hand):
+            s = sum(hand)
+            aces = hand.count(11)
+            while s > 21 and aces:
+                s -= 10
+                aces -= 1
+            return s
+
+        player = [draw(), draw()]
+        dealer = [draw(), draw()]
+
+        class BJView(discord.ui.View):
+            def __init__(self):
+                super().__init__(timeout=60)
+                self.done = False
+            def make_embed(self, reveal=False):
+                p = total(player)
+                d = total(dealer) if reveal else dealer[0]
+                e = discord.Embed(title="🃏 BLACKJACK", color=discord.Color.green())
+                e.add_field(name="Your Hand", value=f"{player} = **{p}**", inline=False)
+                if reveal:
+                    e.add_field(name="Dealer Hand", value=f"{dealer} = **{d}**", inline=False)
+                else:
+                    e.add_field(name="Dealer Hand", value=f"[{dealer[0]}, ?] = **{d}+**", inline=False)
+                e.add_field(name="Bet", value=f"{bet} coins", inline=True)
+                return e
+            @discord.ui.button(label="Hit", style=discord.ButtonStyle.primary, emoji="🃏")
+            async def hit(self, btn_inter: discord.Interaction, button: discord.ui.Button):
+                if btn_inter.user.id != interaction.user.id:
+                    await btn_inter.response.send_message("Not your game!", ephemeral=True)
+                    return
+                player.append(draw())
+                if total(player) > 21:
+                    new_bal = add(interaction.user.id, -bet)
+                    e = self.make_embed(reveal=True)
+                    e.add_field(name="💔 BUST! You lost", value=f"-{bet} coins! New Balance: {new_bal}", inline=False)
+                    for c in self.children: c.disabled = True
+                    await btn_inter.response.edit_message(embed=e, view=self)
+                elif total(player) == 21:
+                    await self.stand_callback(btn_inter)
+                else:
+                    await btn_inter.response.edit_message(embed=self.make_embed(), view=self)
+            @discord.ui.button(label="Stand", style=discord.ButtonStyle.success, emoji="✋")
+            async def stand(self, btn_inter: discord.Interaction, button: discord.ui.Button):
+                await self.stand_callback(btn_inter)
+            async def stand_callback(self, btn_inter):
+                if btn_inter.user.id != interaction.user.id:
+                    await btn_inter.response.send_message("Not your game!", ephemeral=True)
+                    return
+                while total(dealer) < 17:
+                    dealer.append(draw())
+                p, d = total(player), total(dealer)
+                e = self.make_embed(reveal=True)
+                for c in self.children: c.disabled = True
+                if d > 21 or p > d:
+                    win = int(bet * 2.5) if p == 21 and len(player) == 2 else bet * 2
+                    # win is total return, profit = win - bet, but we already didn't deduct, so add profit
+                    profit = win - bet if p == 21 and len(player) == 2 else bet
+                    # Simpler: if win, add bet as profit, blackjack extra
+                    if p == 21 and len(player) == 2:
+                        profit = int(bet * 1.5)
+                    else:
+                        profit = bet
+                    new_bal = add(interaction.user.id, profit)
+                    e.add_field(name="🎉 YOU WIN!", value=f"+{profit} coins! New Balance: {new_bal}", inline=False)
+                elif p == d:
+                    e.add_field(name="🤝 PUSH - Draw!", value=f"Bet returned. Balance: {get_bal(interaction.user.id)}", inline=False)
+                else:
+                    new_bal = add(interaction.user.id, -bet)
+                    e.add_field(name="💔 Dealer Wins!", value=f"-{bet} coins! New Balance: {new_bal}", inline=False)
+                await btn_inter.response.edit_message(embed=e, view=self)
+
+        view = BJView()
+        # Instant blackjack check
+        if total(player) == 21:
+            profit = int(bet * 1.5)
+            new_bal = add(interaction.user.id, profit)
+            e = view.make_embed(reveal=True)
+            e.add_field(name="🎉 BLACKJACK!", value=f"+{profit} coins! New Balance: {new_bal}", inline=False)
+            await interaction.response.send_message(embed=e)
+            return
+        await interaction.response.send_message(embed=view.make_embed(), view=view)
