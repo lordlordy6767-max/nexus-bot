@@ -29,6 +29,7 @@ from bot_app.reaction_roles import handle_reaction
 from bot_app.storage import BotStore
 from bot_app.tickets import register_ticket_views
 from bot_app.tag_replies import handle_tag_reply
+from bot_app.userinfo import register_info_commands
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,6 +53,7 @@ class NexusBot(discord.Client):
     async def setup_hook(self) -> None:
         await self.store.initialize()
         register_commands(self, self.store)
+        register_info_commands(self, self.store)
         self.add_view(VerifyView(self.store))
         register_ticket_views(self, self.store)
         # Global sync (slow, up to 1 hour)
