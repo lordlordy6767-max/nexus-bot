@@ -168,18 +168,27 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         await interaction.response.send_message(embed=brand_embed("🔥 ROAST TIME 🔥", f"{user.mention}, {random.choice(roasts)}"), allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False))
 
     @bot.tree.command(name="announce", description="Post a fancy announcement. Staff only.")
-    @app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)")
-    @app_commands.checks.has_permissions(manage_messages=True)
-    @app_commands.guild_only()
-    async def announce(interaction: discord.Interaction, title: str, message: str, channel: discord.TextChannel | None = None) -> None:
-        await interaction.response.defer(ephemeral=True)
-        target = channel or interaction.channel
-        try:
-            await target.send(embed=brand_embed(f"📢 {title} 📢", f"{message}\n\n— Posted by {interaction.user.mention}"))
-            await interaction.followup.send(f"Announcement sent to {target.mention}! ✅", ephemeral=True)
-        except Exception as e:
-            print(f"ANNOUNCE ERROR: {e}")
-            await interaction.followup.send(f"Couldn't announce there: {e}", ephemeral=True)
+@app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)", image="Optional image to attach to the announcement")
+@app_commands.checks.has_permissions(manage_messages=True)
+@app_commands.guild_only()
+async def announce(interaction: discord.Interaction, title: str, message: str, channel: discord.TextChannel | None = None, image: discord.Attachment | None = None) -> None:
+    await interaction.response.defer(ephemeral=True)
+    target = channel or interaction.channel
+    try:
+        embed = brand_embed(f"📢 {title} 📢", f"{message}\n\n— Posted by {interaction.user.mention}")
+        if image:
+            # Only allow actual images
+            if image.content_type and image.content_type.startswith("image/"):
+                embed.set_image(url=image.url)
+            else:
+                await interaction.followup.send("That file wasn't an image, so I posted without it. ⚠️", ephemeral=True)
+                await target.send(embed=embed)
+                return
+        await target.send(embed=embed)
+        await interaction.followup.send(f"Announcement sent to {target.mention}! ✅", ephemeral=True)
+    except Exception as e:
+        print(f"ANNOUNCE ERROR: {e}")
+        await interaction.followup.send(f"Couldn't announce there: {e}", ephemeral=True)
 
     @bot.tree.command(name="warn", description="Warn a member. Staff only.")
     @app_commands.describe(user="Who to warn?", reason="Why are they being warned?")
