@@ -20,13 +20,9 @@ from bot_app.tickets import register_tickets
 
 logger = logging.getLogger("discord_bot.commands")
 
-# ===== ECONOMY STORAGE (in-memory) =====
-_balances = {}
-_daily_claimed = {}
+# ===== ECONOMY STORAGE - ONE WALLET =====
+from bot_app.wallet import _balances, _daily_claimed, get_bal as _get_bal
 _giveaways = {}
-
-def _get_bal(uid):
-    return _balances.get(uid, 0)
 
 class CloseTicketView(discord.ui.View):
     def __init__(self):
@@ -352,37 +348,41 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     # ===== ECONOMY =====
     @bot.tree.command(name="balance", description="Check your coins.")
     async def balance(interaction: discord.Interaction, user: discord.User | None = None):
+        from bot_app.wallet import get_bal as _get_bal
         u = user or interaction.user
         await interaction.response.send_message(embed=brand_embed("💰 Balance", f"{u.mention} has **{_get_bal(u.id)}** coins 🪙"), ephemeral=True)
 
     @bot.tree.command(name="daily", description="Claim your daily coins.")
     async def daily(interaction: discord.Interaction):
+        from bot_app.wallet import get_bal as _get_bal, add as _add, get_daily_last, set_daily
         now = time.time()
-        last = _daily_claimed.get(interaction.user.id, 0)
+        last = get_daily_last(interaction.user.id)
         if now - last < 86400:
             hrs = int((86400 - (now - last)) / 3600)
             await interaction.response.send_message(embed=brand_embed("⏳ Daily", f"Already claimed! Come back in **{hrs}h**"), ephemeral=True)
             return
-        _daily_claimed[interaction.user.id] = now
-        _balances[interaction.user.id] = _get_bal(interaction.user.id) + 500
-        await interaction.response.send_message(embed=brand_embed("💰 Daily Claimed!", f"+500 coins! 🪙\nNew balance: **{_get_bal(interaction.user.id)}**"))
+        set_daily(interaction.user.id, now)
+        new_bal = _add(interaction.user.id, 500)
+        await interaction.response.send_message(embed=brand_embed("💰 Daily Claimed!", f"+500 coins! 🪙\nNew balance: **{new_bal}**"))
 
     @bot.tree.command(name="work", description="Work for coins.")
     async def work(interaction: discord.Interaction):
+        from bot_app.wallet import get_bal as _get_bal, add as _add
         jobs = ["You coded for NEXUS 💻", "You guarded the server 🛡️", "You sold memes 😂", "You streamed on Twitch 🎮"]
         earn = random.randint(50, 250)
-        _balances[interaction.user.id] = _get_bal(interaction.user.id) + earn
-        await interaction.response.send_message(embed=brand_embed("💼 Work", f"{random.choice(jobs)}\n+**{earn}** coins! Balance: **{_get_bal(interaction.user.id)}**"))
+        new_bal = _add(interaction.user.id, earn)
+        await interaction.response.send_message(embed=brand_embed("💼 Work", f"{random.choice(jobs)}\n+**{earn}** coins! Balance: **{new_bal}**"))
 
     @bot.tree.command(name="pay", description="Pay someone coins.")
     @app_commands.describe(user="Who to pay?", amount="How much?")
     async def pay(interaction: discord.Interaction, user: discord.User, amount: int):
+        from bot_app.wallet import get_bal as _get_bal, add as _add
         if amount <= 0:
             await interaction.response.send_message("Amount must be > 0", ephemeral=True); return
         if _get_bal(interaction.user.id) < amount:
             await interaction.response.send_message(f"You only have {_get_bal(interaction.user.id)} coins!", ephemeral=True); return
-        _balances[interaction.user.id] -= amount
-        _balances[user.id] = _get_bal(user.id) + amount
+        _add(interaction.user.id, -amount)
+        _add(user.id, amount)
         await interaction.response.send_message(embed=brand_embed("💸 Payment", f"{interaction.user.mention} paid {user.mention} **{amount}** coins 🪙"))
         
     # ===== TICKET PANEL V2 =====
