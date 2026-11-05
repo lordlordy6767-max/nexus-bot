@@ -167,9 +167,9 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         roasts = ["Your WiFi is faster than your brain. 📶", "You bring everyone so much joy... when you leave the room. 😂", "You're the reason we have loading screens. ⏳", "Your gameplay is so bad, even the bots feel sorry for you. 🤖", "You have the charisma of a buffering video. 🐢", "If laziness was an Olympic sport, you'd win gold while napping. 🥇😴", "You're proof that even Discord has a mute button for a reason. 🔇", "Your IQ and your ping have one thing in common... both are unstable. 📉"]
         await interaction.response.send_message(embed=brand_embed("🔥 ROAST TIME 🔥", f"{user.mention}, {random.choice(roasts)}"), allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False))
 
-    @bot.tree.command(name="announce", description="Post a fancy announcement. Staff only.")
-    @app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)", image="Optional image to attach to the announcement")
-    @app_commands.checks.has_permissions(manage_messages=True)
+@bot.tree.command(name="announce", description="Post a fancy announcement. Staff only.")
+@app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)", image="Optional image to attach to the announcement")
+@app_commands.checks.has_permissions(manage_messages=True)
 @app_commands.guild_only()
 async def announce(interaction: discord.Interaction, title: str, message: str, channel: discord.TextChannel | None = None, image: discord.Attachment | None = None) -> None:
     await interaction.response.defer(ephemeral=True)
