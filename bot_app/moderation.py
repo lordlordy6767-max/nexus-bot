@@ -8,6 +8,9 @@ from discord import app_commands
 from bot_app.branding import PURPLE, brand_embed
 
 MODLOG_CHANNELS: dict[int, int] = {}
+WELCOME_CHANNELS: dict[int, int] = {}
+FAREWELL_CHANNELS: dict[int, int] = {}
+MOD_ROLES: dict[int, int] = {}
 
 async def _log(guild: discord.Guild, embed: discord.Embed) -> None:
     channel_id = MODLOG_CHANNELS.get(guild.id)
@@ -169,10 +172,17 @@ def register_moderation(bot: discord.Client) -> None:
             limit=int(amount),
             reason=f"NEXUS V1 clear by {interaction.user}",
         )
-        await interaction.followup.send(
-            f"Deleted {len(deleted)} message(s).",
-            ephemeral=True,
-        )
+        if len(deleted) < amount:
+            await interaction.followup.send(
+                f"Deleted {len(deleted)} message(s).\n"
+                f"⚠️ Asked for {amount} but only found {len(deleted)} - rest are either gone or older than 14 days (Discord won't let me delete those).",
+                ephemeral=True,
+            )
+        else:
+            await interaction.followup.send(
+                f"Deleted {len(deleted)} message(s).",
+                ephemeral=True,
+            )
         if interaction.guild is not None:
             await _log(
                 interaction.guild,
@@ -235,7 +245,72 @@ def register_moderation(bot: discord.Client) -> None:
                 ),
             )
 
+    # NEW: /set - asks WHAT TYPE + WHAT CHANNEL - your idea + my idea
+    @bot.tree.command(name="set", description="Set server settings - mod logs, welcome, farewell, mod role")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
+    @app_commands.describe(action="What type do you want to set?", channel="Which channel?", role="Which role?")
+    @app_commands.choices(action=[
+        app_commands.Choice(name="mod - Mod logs channel", value="mod"),
+        app_commands.Choice(name="welcome - Welcome channel", value="welcome"),
+        app_commands.Choice(name="farewell - Farewell channel", value="farewell"),
+        app_commands.Choice(name="modrole - Mod role", value="modrole"),
+    ])
+    async def set_cmd(
+        interaction: discord.Interaction,
+        action: str,
+        channel: discord.TextChannel = None,
+        role: discord.Role = None,
+    ) -> None:
+        guild = interaction.guild
+        if guild is None:
+            await _send_error(interaction, "Use this inside a server.")
+            return
+
+        if action == "mod":
+            if not channel:
+                await _send_error(interaction, "Pick a channel! Example: /set mod #mod-logs")
+                return
+            MODLOG_CHANNELS[guild.id] = channel.id
+            await interaction.response.send_message(
+                embed=brand_embed("Mod Logs Set", f"Mod logs will now go to {channel.mention}", color=PURPLE),
+                ephemeral=True,
+            )
+            await channel.send(embed=brand_embed("Mod Logs Set", f"Mod logs will now go here.\nSet by: {interaction.user.mention}", color=PURPLE))
+
+        elif action == "welcome":
+            if not channel:
+                await _send_error(interaction, "Pick a channel! Example: /set welcome #welcome")
+                return
+            WELCOME_CHANNELS[guild.id] = channel.id
+            await interaction.response.send_message(
+                embed=brand_embed("Welcome Set", f"Welcome messages will go to {channel.mention}", color=PURPLE),
+                ephemeral=True,
+            )
+
+        elif action == "farewell":
+            if not channel:
+                await _send_error(interaction, "Pick a channel! Example: /set farewell #goodbye")
+                return
+            FAREWELL_CHANNELS[guild.id] = channel.id
+            await interaction.response.send_message(
+                embed=brand_embed("Farewell Set", f"Farewell messages will go to {channel.mention}", color=PURPLE),
+                ephemeral=True,
+            )
+
+        elif action == "modrole":
+            if not role:
+                await _send_error(interaction, "Pick a role! Example: /set modrole @Mod")
+                return
+            MOD_ROLES[guild.id] = role.id
+            await interaction.response.send_message(
+                embed=brand_embed("Mod Role Set", f"Mod role is now {role.mention}", color=PURPLE),
+                ephemeral=True,
+            )
+
 def register_modlog_setup(bot: discord.Client) -> None:
+    # Kept for backwards compatibility - old /set-modlogs still works
     @bot.tree.command(name="set-modlogs", description="Set the channel for moderation logs")
     @app_commands.describe(channel="Channel to send mod logs to")
     async def set_modlogs(interaction: discord.Interaction, channel: discord.TextChannel) -> None:
