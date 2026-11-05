@@ -335,3 +335,27 @@ def register_modlog_setup(bot: discord.Client) -> None:
                 color=PURPLE,
             )
         )
+
+        def register_farewell(bot: discord.Client) -> None:
+    @bot.event
+    async def on_member_remove(member: discord.Member):
+        guild = member.guild
+        channel_id = FAREWELL_CHANNELS.get(guild.id)
+        if not channel_id:
+            return
+        channel = guild.get_channel(channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            return
+        try:
+            await channel.send(
+                embed=brand_embed(
+                    "Goodbye 👋",
+                    f"{member.mention} ({member}) left the server.\n"
+                    f"We're now at **{guild.member_count}** members.\n"
+                    f"Hope to see you again!",
+                    color=PURPLE,
+                ),
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+        except Exception:
+            pass
