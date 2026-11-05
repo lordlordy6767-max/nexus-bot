@@ -168,8 +168,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         await interaction.response.send_message(embed=brand_embed("🔥 ROAST TIME 🔥", f"{user.mention}, {random.choice(roasts)}"), allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False))
 
     @bot.tree.command(name="announce", description="Post a fancy announcement. Staff only.")
-@app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)", image="Optional image to attach to the announcement")
-@app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.describe(title="Announcement title", message="What do you want to announce?", channel="Where to post it? (leave empty for this channel)", image="Optional image to attach to the announcement")
+    @app_commands.checks.has_permissions(manage_messages=True)
 @app_commands.guild_only()
 async def announce(interaction: discord.Interaction, title: str, message: str, channel: discord.TextChannel | None = None, image: discord.Attachment | None = None) -> None:
     await interaction.response.defer(ephemeral=True)
