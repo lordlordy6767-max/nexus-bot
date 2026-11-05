@@ -1,8 +1,9 @@
 import json
 import os
-os.makedirs("/app/data", exist_ok=True)
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
-FILE = "/app/data/balances.json"
+FILE = os.path.join(DATA_DIR, "balances.json")
 _balances = {}
 _daily_claimed = {}
 
