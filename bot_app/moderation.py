@@ -20,7 +20,6 @@ async def _log(guild: discord.Guild, embed: discord.Embed) -> None:
         except Exception:
             pass
 
-
 def _target_error(
     interaction: discord.Interaction,
     target: discord.Member,
@@ -44,13 +43,11 @@ def _target_error(
         return "The target is at or above my highest role. Move my role higher."
     return None
 
-
 async def _send_error(
     interaction: discord.Interaction,
     message: str,
 ) -> None:
     await interaction.response.send_message(message, ephemeral=True)
-
 
 def register_moderation(bot: discord.Client) -> None:
     @bot.tree.command(name="ban", description="Ban a member from this server.")
@@ -90,6 +87,15 @@ def register_moderation(bot: discord.Client) -> None:
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
+        if interaction.guild is not None:
+            await _log(
+                interaction.guild,
+                brand_embed(
+                    "Member banned",
+                    f"{member.mention} was banned.\nReason: {safe_reason}\nBy: {interaction.user.mention}",
+                    color=PURPLE,
+                ),
+            )
 
     @bot.tree.command(name="kick", description="Remove a member from this server.")
     @app_commands.guild_only()
@@ -125,6 +131,15 @@ def register_moderation(bot: discord.Client) -> None:
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
+        if interaction.guild is not None:
+            await _log(
+                interaction.guild,
+                brand_embed(
+                    "Member kicked",
+                    f"{member.mention} was removed.\nReason: {safe_reason}\nBy: {interaction.user.mention}",
+                    color=PURPLE,
+                ),
+            )
 
     @bot.tree.command(name="clear", description="Delete recent messages.")
     @app_commands.guild_only()
@@ -158,6 +173,15 @@ def register_moderation(bot: discord.Client) -> None:
             f"Deleted {len(deleted)} message(s).",
             ephemeral=True,
         )
+        if interaction.guild is not None:
+            await _log(
+                interaction.guild,
+                brand_embed(
+                    "Messages cleared",
+                    f"{len(deleted)} message(s) deleted in {channel.mention}\nBy: {interaction.user.mention}",
+                    color=PURPLE,
+                ),
+            )
 
     @bot.tree.command(
         name="mute",
@@ -201,9 +225,18 @@ def register_moderation(bot: discord.Client) -> None:
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
+        if interaction.guild is not None:
+            await _log(
+                interaction.guild,
+                brand_embed(
+                    "Member timed out",
+                    f"{member.mention} was timed out for {minutes} minute(s).\nReason: {safe_reason}\nBy: {interaction.user.mention}",
+                    color=PURPLE,
+                ),
+            )
 
 def register_modlog_setup(bot: discord.Client) -> None:
-    @bot.tree.command(name="set-modlogs", description="Set the channel for moderation logs")  
+    @bot.tree.command(name="set-modlogs", description="Set the channel for moderation logs")
     @app_commands.describe(channel="Channel to send mod logs to")
     async def set_modlogs(interaction: discord.Interaction, channel: discord.TextChannel) -> None:
         guild = interaction.guild
@@ -220,3 +253,10 @@ def register_modlog_setup(bot: discord.Client) -> None:
         MODLOG_CHANNELS[guild.id] = channel.id
         embed = discord.Embed(title="Mod Logs Set", description=f"Mod logs will now go to {channel.mention}", color=PURPLE)
         await interaction.response.send_message(embed=embed, ephemeral=True)
+        await channel.send(
+            embed=brand_embed(
+                "Mod Logs Set",
+                f"Mod logs will now go here.\nSet by: {user.mention}",
+                color=PURPLE,
+            )
+        )

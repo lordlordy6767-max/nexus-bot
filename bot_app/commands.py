@@ -12,7 +12,7 @@ from bot_app.automod import register_automod
 from bot_app.antinuke import register_antinuke
 from bot_app.branding import brand_embed
 from bot_app.levels import register_levels
-from bot_app.moderation import register_moderation, register_modlog_setup
+from bot_app.moderation import MODLOG_CHANNELS,register_moderation, register_modlog_setup
 from bot_app.onboarding import register_onboarding
 from bot_app.reaction_roles import register_reaction_roles
 from bot_app.storage import BotStore
@@ -20,6 +20,16 @@ from bot_app.tickets import register_tickets
 
 logger = logging.getLogger("discord_bot.commands")
 
+async def _log_commands(guild: discord.Guild, embed: discord.Embed) -> None:
+    channel_id = MODLOG_CHANNELS.get(guild.id)
+    if not channel_id:
+        return
+    channel = guild.get_channel(channel_id)
+    if isinstance(channel, discord.TextChannel):
+        try:
+            await channel.send(embed=embed)
+        except Exception:
+            pass
 # ===== ECONOMY STORAGE - ONE WALLET =====
 from bot_app.wallet import _balances, _daily_claimed, get_bal as _get_bal
 _giveaways = {}
@@ -194,7 +204,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             await user.send(f"⚠️ You were warned in **{interaction.guild.name}**:\n\n> {reason}")
         except Exception:
             pass
-
+            if interaction.guild is not None:
+                await _log_commands(interaction.guild, brand_embed("⚠️ Member Warned", f"{user.mention} warned.\n**Reason:** {reason}\n**By:** {interaction.user.mention}"))
     @bot.tree.command(name="unmute", description="Unmute a member. Staff only.")
     @app_commands.describe(user="Who to unmute?")
     @app_commands.checks.has_permissions(moderate_members=True)
@@ -204,6 +215,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         try:
             await user.timeout(None)
             await interaction.followup.send(f"Unmuted {user.mention}! ✅", ephemeral=True)
+            if interaction.guild is not None:
+                await _log_commands(interaction.guild, brand_embed("🔊 Member Unmuted", f"{user.mention} unmuted.\nUnmuted by {interaction.user.mention}"))
         except Exception as e:
             print(f"UNMUTE ERROR: {e}")
             await interaction.followup.send(f"Couldn't unmute: {e}", ephemeral=True)
@@ -218,6 +231,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
             user_obj = await bot.fetch_user(int(user_id))
             await interaction.guild.unban(user_obj)
             await interaction.followup.send(f"Unbanned {user_obj.mention}! ✅", ephemeral=True)
+            if interaction.guild is not None:
+                await _log_commands(interaction.guild, brand_embed("✅ Member Unbanned", f"Unbanned {user_obj.mention}.\nUnbanned by {interaction.user.mention}"))
         except Exception as e:
             print(f"UNBAN ERROR: {e}")
             await interaction.followup.send(f"Couldn't unban: {e}\nMake sure you copied the correct User ID.", ephemeral=True)
@@ -236,6 +251,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         try:
             await target.set_permissions(interaction.guild.default_role, send_messages=False)
             await interaction.response.send_message(embed=brand_embed("🔒 Channel Locked", f"{target.mention} is now locked.\n\nLocked by {interaction.user.mention}"), ephemeral=True)
+            if interaction.guild is not None:
+             await _log_commands(interaction.guild, brand_embed("🔒 Channel Locked", f"{target.mention} locked.\nLocked by {interaction.user.mention}"))
         except Exception as e:
             print(f"LOCK ERROR: {e}")
             await interaction.response.send_message(f"Couldn't lock: {e}", ephemeral=True)
@@ -253,6 +270,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         try:
             await target.set_permissions(interaction.guild.default_role, send_messages=None)
             await interaction.response.send_message(embed=brand_embed("🔓 Channel Unlocked", f"{target.mention} is now unlocked.\n\nUnlocked by {interaction.user.mention}"), ephemeral=True)
+            if interaction.guild is not None:
+             await _log_commands(interaction.guild, brand_embed("🔓 Channel Unlocked", f"{target.mention} unlocked.\nUnlocked by {interaction.user.mention}"))
         except Exception as e:
             print(f"UNLOCK ERROR: {e}")
             await interaction.response.send_message(f"Couldn't unlock: {e}", ephemeral=True)
@@ -274,6 +293,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
                 await interaction.followup.send(embed=brand_embed("🚨 Already in Lockdown", "All channels are already locked."), ephemeral=True)
             else:
                 await interaction.followup.send(embed=brand_embed("🚨 SERVER LOCKDOWN", f"Locked **{count}** channels.\n\nActivated by {interaction.user.mention}"), ephemeral=True)
+                if interaction.guild is not None:
+                    await _log_commands(interaction.guild, brand_embed("🚨 SERVER LOCKDOWN", f"Locked **{count}** channels.\nActivated by {interaction.user.mention}"))
         except Exception as e:
             print(f"LOCKDOWN ERROR: {e}")
             await interaction.followup.send(f"Lockdown failed: {e}", ephemeral=True)
@@ -295,6 +316,8 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
                 await interaction.followup.send(embed=brand_embed("✅ Already Unlocked", "All channels are already unlocked."), ephemeral=True)
             else:
                 await interaction.followup.send(embed=brand_embed("✅ SERVER UNLOCKED", f"Unlocked **{count}** channels.\n\nUnlocked by {interaction.user.mention}"), ephemeral=True)
+                if interaction.guild is not None:
+                    await _log_commands(interaction.guild, brand_embed("✅ SERVER UNLOCKED", f"Unlocked **{count}** channels.\nActivated by {interaction.user.mention}"))
         except Exception as e:
             print(f"UNLOCKDOWN ERROR: {e}")
             await interaction.followup.send(f"Unlockdown failed: {e}", ephemeral=True)
@@ -305,7 +328,9 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.guild_only()
     async def antiraid(interaction: discord.Interaction, mode: app_commands.Choice[str]) -> None:
-        await interaction.response.send_message(embed=brand_embed("🛡️ Anti-Raid", f"Anti-Raid is now **{mode.value.upper()}**.\n\nSet by {interaction.user.mention}"), ephemeral=True)
+        await interaction.response.send_message(embed=brand_embed("🛡️ Anti-Raid", f"Anti-Raid is now **{mode.value.upper()}**.\n\nSet by {interaction.user.mention}"), ephemeral=True)            
+        if interaction.guild is not None:
+                await _log_commands(interaction.guild, brand_embed("🛡️ Anti-Raid", f"Anti-Raid is now **{mode.value.upper()}**.\nSet by {interaction.user.mention}"))
 
     # ===== GIVEAWAY - FIXED =====
     @bot.tree.command(name="giveaway", description="Start a giveaway. Staff only.")
