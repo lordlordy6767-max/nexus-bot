@@ -202,3 +202,21 @@ def register_moderation(bot: discord.Client) -> None:
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
+def register_modlog_setup(bot: discord.Client) -> None:
+    @bot.tree.command(name="set-modlogs", description="Set the channel for moderation logs")  
+    @app_commands.describe(channel="Channel to send mod logs to")
+    async def set_modlogs(interaction: discord.Interaction, channel: discord.TextChannel) -> None:
+        guild = interaction.guild
+        if guild is None:
+            await interaction.response.send_message("Use this inside a server.", ephemeral=True)
+            return
+        user = interaction.user
+        if not isinstance(user, discord.Member):
+            await interaction.response.send_message("Use this inside a server.", ephemeral=True)
+            return
+        if not user.guild_permissions.manage_guild:
+            await interaction.response.send_message("You need Manage Server to do this.", ephemeral=True)
+            return
+        MODLOG_CHANNELS[guild.id] = channel.id
+        embed = discord.Embed(title="Mod Logs Set", description=f"Mod logs will now go to {channel.mention}", color=PURPLE)
+        await interaction.response.send_message(embed=embed, ephemeral=True)

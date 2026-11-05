@@ -12,7 +12,7 @@ from bot_app.automod import register_automod
 from bot_app.antinuke import register_antinuke
 from bot_app.branding import brand_embed
 from bot_app.levels import register_levels
-from bot_app.moderation import register_moderation
+from bot_app.moderation import register_moderation, register_modlog_setup
 from bot_app.onboarding import register_onboarding
 from bot_app.reaction_roles import register_reaction_roles
 from bot_app.storage import BotStore
@@ -53,6 +53,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     register_onboarding(bot, store)
     register_automod(bot, store)
     register_moderation(bot)
+    register_modlog_setup(bot)
     register_tickets(bot, store)
     register_reaction_roles(bot, store)
     register_levels(bot, store)
