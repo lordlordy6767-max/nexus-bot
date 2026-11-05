@@ -175,21 +175,18 @@ async def announce(interaction: discord.Interaction, title: str, message: str, c
     await interaction.response.defer(ephemeral=True)
     target = channel or interaction.channel
     try:
-        embed = brand_embed(f"📢 {title} 📢", f"{message}\n\n— Posted by {interaction.user.mention}")
+        embed = brand_embed(f"📣 {title} 📣", f"{message}\n\n- Posted by {interaction.user.mention}")
         if image:
             # Only allow actual images
             if image.content_type and image.content_type.startswith("image/"):
                 embed.set_image(url=image.url)
             else:
                 await interaction.followup.send("That file wasn't an image, so I posted without it. ⚠️", ephemeral=True)
-                await target.send(embed=embed)
-                return
         await target.send(embed=embed)
         await interaction.followup.send(f"Announcement sent to {target.mention}! ✅", ephemeral=True)
     except Exception as e:
         print(f"ANNOUNCE ERROR: {e}")
         await interaction.followup.send(f"Couldn't announce there: {e}", ephemeral=True)
-
     @bot.tree.command(name="warn", description="Warn a member. Staff only.")
     @app_commands.describe(user="Who to warn?", reason="Why are they being warned?")
     @app_commands.checks.has_permissions(moderate_members=True)
