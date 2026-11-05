@@ -30,6 +30,7 @@ from bot_app.storage import BotStore
 from bot_app.tickets import register_ticket_views
 from bot_app.tag_replies import handle_tag_reply
 from bot_app.userinfo import register_info_commands
+from bot_app.games import register_games_commands
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +55,7 @@ class NexusBot(discord.Client):
         await self.store.initialize()
         register_commands(self, self.store)
         register_info_commands(self, self.store)
+        register_games_commands(self, self.store)
         self.add_view(VerifyView(self.store))
         register_ticket_views(self, self.store)
         # Global sync (slow, up to 1 hour)
