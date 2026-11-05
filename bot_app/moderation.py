@@ -336,7 +336,7 @@ def register_modlog_setup(bot: discord.Client) -> None:
             )
         )
 
-        def register_farewell(bot: discord.Client) -> None:
+def register_farewell(bot: discord.Client) -> None:
     @bot.event
     async def on_member_remove(member: discord.Member):
         guild = member.guild
