@@ -44,7 +44,6 @@ def _target_error(
         return "I cannot target myself."
     if actor.id != guild.owner_id and target.top_role >= actor.top_role:
         return "You can only target members below your highest role."
-
     bot_member = guild.me
     if bot_member is None or target.top_role >= bot_member.top_role:
         return "The target is at or above my highest role. Move my role higher."
@@ -67,10 +66,11 @@ def register_moderation(bot: discord.Client) -> None:
     ) -> None:
         _modlog_channels[interaction.guild.id] = channel.id
         await interaction.response.send_message(
-            f"✅ Mod logs will now go to {channel.mention}",
+            "✅ Mod logs will now go to " + channel.mention,
             ephemeral=True,
         )
-        await _log(bot, interaction.guild, "📋 Mod Logs Set", f"Mod logs channel set to {channel.mention}\nBy: {interaction.user.mention}")
+        log_text = "Mod logs channel set to " + channel.mention + "\nBy: " + interaction.user.mention
+        await _log(bot, interaction.guild, "📋 Mod Logs Set", log_text)
 
     @bot.tree.command(name="ban", description="Ban a member from this server.")
     @app_commands.guild_only()
@@ -93,23 +93,23 @@ def register_moderation(bot: discord.Client) -> None:
                 "I need the Ban Members permission to do that.",
             )
             return
-
         safe_reason = reason[:450]
         await interaction.response.defer(ephemeral=True, thinking=True)
         await member.ban(
-            reason=f"{safe_reason} | NEXUS V1 by {interaction.user}",
+            reason=safe_reason + " | NEXUS V1 by " + str(interaction.user),
             delete_message_seconds=0,
         )
         await interaction.followup.send(
             embed=brand_embed(
                 "Member banned",
-                f"{member.mention} was banned.\nReason: {safe_reason}",
+                member.mention + " was banned.\nReason: " + safe_reason,
                 color=PURPLE,
             ),
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
-        await _log(bot, interaction.guild, "🔨 BAN", f"**Target:** {member.mention} ({member.id})\n**By:** {interaction.user.mention}\n**Reason:** {safe_reason}")
+        log_text = "**Target:** " + member.mention + " (" + str(member.id) + ")\n**By:** " + interaction.user.mention + "\n**Reason:** " + safe_reason
+        await _log(bot, interaction.guild, "🔨 BAN", log_text)
 
     @bot.tree.command(name="kick", description="Remove a member from this server.")
     @app_commands.guild_only()
@@ -132,11 +132,51 @@ def register_moderation(bot: discord.Client) -> None:
                 "I need the Kick Members permission to do that.",
             )
             return
-
         safe_reason = reason[:450]
         await interaction.response.defer(ephemeral=True, thinking=True)
-        await member.kick(reason=f"{safe_reason} | NEXUS V1 by {interaction.user}")
+        await member.kick(reason=safe_reason + " | NEXUS V1 by " + str(interaction.user))
         await interaction.followup.send(
             embed=brand_embed(
                 "Member kicked",
-                f"{member.mention} was removed
+                member.mention + " was removed.\nReason: " + safe_reason,
+                color=PURPLE,
+            ),
+            ephemeral=True,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+        log_text = "**Target:** " + member.mention + " (" + str(member.id) + ")\n**By:** " + interaction.user.mention + "\n**Reason:** " + safe_reason
+        await _log(bot, interaction.guild, "👢 KICK", log_text)
+
+    @bot.tree.command(name="clear", description="Delete recent messages.")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def clear(
+        interaction: discord.Interaction,
+        amount: app_commands.Range[int, 1, 100] = 10,
+    ) -> None:
+        channel = interaction.channel
+        if not isinstance(channel, (discord.TextChannel, discord.Thread)):
+            await _send_error(
+                interaction,
+                "Use this command in a text channel or thread.",
+            )
+            return
+        bot_member = interaction.guild.me if interaction.guild is not None else None
+        if bot_member is None or not bot_member.guild_permissions.manage_messages:
+            await _send_error(
+                interaction,
+                "I need the Manage Messages permission to do that.",
+            )
+            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        deleted = await channel.purge(
+            limit=int(amount),
+            reason="NEXUS V1 clear by " + str(interaction.user),
+        )
+        await interaction.followup.send(
+            "Deleted " + str(len(deleted)) + " message(s).",
+            ephemeral=True,
+        )
+        log_text = "**By:** " + interaction.user.mention + "\n**Channel:** " + channel.mention + "\n**Deleted:** " + str(len(deleted)) + " messages"
+        await _log(bot, interaction.guild,
