@@ -11,7 +11,7 @@ from bot_app.storage import BotStore
 logger = logging.getLogger("discord_bot.reaction_roles")
 
 def register_reaction_roles(bot: discord.Client, store: BotStore) -> None:
-    # --- KEEP YOUR OLD SINGLE COMMAND (so old panels still work) ---
+    # --- KEEP YOUR OLD SINGLE COMMAND ---
     @bot.tree.command(
         name="reaction-role-setup",
         description="Post a reaction that assigns a server role.",
@@ -66,7 +66,7 @@ def register_reaction_roles(bot: discord.Client, store: BotStore) -> None:
         await store.set_reaction_role(panel.id, str(parsed_emoji), guild.id, role.id)
         await interaction.followup.send(f"Reaction role panel posted in {channel.mention}.", ephemeral=True)
 
-    # --- NEW V2 MULTI COMMAND - Option A Wizard Style ---
+    # --- NEW V2 MULTI COMMAND - 10 ROLES ---
     @bot.tree.command(
         name="reaction-roles-setup",
         description="Post ONE panel with up to 10 reaction roles (Multi).",
@@ -82,6 +82,11 @@ def register_reaction_roles(bot: discord.Client, store: BotStore) -> None:
         role_3="Third role (optional)", emoji_3="Third emoji (optional)",
         role_4="Fourth role (optional)", emoji_4="Fourth emoji (optional)",
         role_5="Fifth role (optional)", emoji_5="Fifth emoji (optional)",
+        role_6="Sixth role (optional)", emoji_6="Sixth emoji (optional)",
+        role_7="Seventh role (optional)", emoji_7="Seventh emoji (optional)",
+        role_8="Eighth role (optional)", emoji_8="Eighth emoji (optional)",
+        role_9="Ninth role (optional)", emoji_9="Ninth emoji (optional)",
+        role_10="Tenth role (optional)", emoji_10="Tenth emoji (optional)",
     )
     async def reaction_roles_setup(
         interaction: discord.Interaction,
@@ -92,6 +97,11 @@ def register_reaction_roles(bot: discord.Client, store: BotStore) -> None:
         role_3: discord.Role | None = None, emoji_3: str | None = None,
         role_4: discord.Role | None = None, emoji_4: str | None = None,
         role_5: discord.Role | None = None, emoji_5: str | None = None,
+        role_6: discord.Role | None = None, emoji_6: str | None = None,
+        role_7: discord.Role | None = None, emoji_7: str | None = None,
+        role_8: discord.Role | None = None, emoji_8: str | None = None,
+        role_9: discord.Role | None = None, emoji_9: str | None = None,
+        role_10: discord.Role | None = None, emoji_10: str | None = None,
     ) -> None:
         guild = interaction.guild
         if guild is None:
@@ -101,7 +111,8 @@ def register_reaction_roles(bot: discord.Client, store: BotStore) -> None:
             await interaction.response.send_message("I need Manage Roles permission.", ephemeral=True)
             return
 
-        pairs = [(role_1, emoji_1), (role_2, emoji_2), (role_3, emoji_3), (role_4, emoji_4), (role_5, emoji_5)]
+        pairs = [(role_1, emoji_1), (role_2, emoji_2), (role_3, emoji_3), (role_4, emoji_4), (role_5, emoji_5),
+                 (role_6, emoji_6), (role_7, emoji_7), (role_8, emoji_8), (role_9, emoji_9), (role_10, emoji_10)]
         valid = []
         seen_emoji = set()
         for role, emoji_str in pairs:
@@ -151,7 +162,6 @@ async def handle_reaction(
     *,
     added: bool,
 ) -> None:
-    # SAME AS BEFORE - NO CHANGE NEEDED, it already handles multi because it looks up by message+emoji
     if payload.guild_id is None or bot.user is None:
         return
     if payload.user_id == bot.user.id:
