@@ -392,7 +392,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
         await interaction.response.send_message(embed=brand_embed("🎫 NEXUS Support", "Need help? Click below to open a ticket!\n\nOur staff will assist you ASAP."), view=TicketView())
 
     @bot.tree.command(name="help", description="See all NEXUS commands.")
-async def help_cmd(interaction: discord.Interaction) -> None:
+    async def help_cmd(interaction: discord.Interaction) -> None:
     text = (
         "**👋 Welcome / Fun**\n"
         "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball`\n\n"
