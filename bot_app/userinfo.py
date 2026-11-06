@@ -29,7 +29,7 @@ def register_info_commands(bot, store):
 
     @tree.command(name="serverinfo", description="Show info about this server")
     async def serverinfo(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
 
     if guild is None:
