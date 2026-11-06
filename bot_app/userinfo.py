@@ -30,36 +30,36 @@ def register_info_commands(bot, store):
     @tree.command(name="serverinfo", description="Show info about this server")
     async def serverinfo(interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-    guild = interaction.guild
+        guild = interaction.guild
 
-    if guild is None:
-        await interaction.followup.send("This command only works in a server, King 👑")
-        return
+        if guild is None:
+            await interaction.followup.send("This command only works in a server, King 👑")
+            return
 
-    # Fix for owner being None - fetch it if needed
-    owner = guild.owner
-    if owner is None:
-        try:
-            owner = await guild.fetch_member(guild.owner_id)
-        except:
-            owner = None
+        # Fix for owner being None - fetch it if needed
+        owner = guild.owner
+        if owner is None:
+            try:
+                owner = await guild.fetch_member(guild.owner_id)
+            except:
+                owner = None
 
-    owner_text = owner.mention if owner else f"<@{guild.owner_id}>"
+        owner_text = owner.mention if owner else f"<@{guild.owner_id}>"
 
-    embed = discord.Embed(title=f"{guild.name} Info", color=discord.Color.blue())
-    if guild.icon:
-        embed.set_thumbnail(url=guild.icon.url)
-    if guild.banner:
-        embed.set_image(url=guild.banner.url)
+        embed = discord.Embed(title=f"{guild.name} Info", color=discord.Color.blue())
+        if guild.icon:
+            embed.set_thumbnail(url=guild.icon.url)
+        if guild.banner:
+            embed.set_image(url=guild.banner.url)
 
-    embed.add_field(name="👑 Owner", value=owner_text, inline=True)
-    embed.add_field(name="🆔 Server ID", value=f"`{guild.id}`", inline=True)
-    embed.add_field(name="📅 Created", value=f"<t:{int(guild.created_at.timestamp())}:R>", inline=True)
-    embed.add_field(name="👥 Members", value=f"{guild.member_count}", inline=True)
-    embed.add_field(name="💬 Channels", value=f"{len(guild.channels)}", inline=True)
-    embed.add_field(name="🎭 Roles", value=f"{len(guild.roles)}", inline=True)
-    embed.add_field(name="😀 Emojis", value=f"{len(guild.emojis)}", inline=True)
-    embed.add_field(name="🚀 Boosts", value=f"{guild.premium_subscription_count or 0} (Level {guild.premium_tier})", inline=True)
-    embed.add_field(name="✅ Verification", value=str(guild.verification_level).title(), inline=True)
+        embed.add_field(name="👑 Owner", value=owner_text, inline=True)
+        embed.add_field(name="🆔 Server ID", value=f"`{guild.id}`", inline=True)
+        embed.add_field(name="📅 Created", value=f"<t:{int(guild.created_at.timestamp())}:R>", inline=True)
+        embed.add_field(name="👥 Members", value=f"{guild.member_count}", inline=True)
+        embed.add_field(name="💬 Channels", value=f"{len(guild.channels)}", inline=True)
+        embed.add_field(name="🎭 Roles", value=f"{len(guild.roles)}", inline=True)
+        embed.add_field(name="😀 Emojis", value=f"{len(guild.emojis)}", inline=True)
+        embed.add_field(name="🚀 Boosts", value=f"{guild.premium_subscription_count or 0} (Level {guild.premium_tier})", inline=True)
+        embed.add_field(name="✅ Verification", value=str(guild.verification_level).title(), inline=True)
 
-    await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed)
