@@ -453,8 +453,8 @@ async def help_cmd(interaction: discord.Interaction) -> None:
     "**⚙️ Setup / System**\n"
     "`/ping` `/help` `/verify` `/set` `/set-modlogs` `/welcome set` `/welcome disable`\n\n"
     "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
-)
-        await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
+    )
+    await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
 async def handle_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.MissingPermissions):
         message = "You do not have permission to use that command."
