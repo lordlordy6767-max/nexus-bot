@@ -8,8 +8,8 @@ import random
 def register_v3(bot, store):
     tree = bot.tree
 
-    if "v3" not in store:
-        store["v3"] = {
+    if not hasattr(store, "v3"):
+        store.v3 = {
             "welcome_channel": None,
             "welcome_text": "WELCOME TO KINGDOM",
             "welcome_msg": "Welcome {mention}! Make yourself at home. Check out #rules and pick your roles! 👑",
@@ -17,7 +17,7 @@ def register_v3(bot, store):
             "starboard_min": 3,
             "starboard_posted": [],
         }
-    cfg = store["v3"]
+        cfg = store.v3
 
     # ============ WELCOME SETUP ============
     @tree.command(name="welcome-setup", description="Setup welcome image card - choose channel and text")
