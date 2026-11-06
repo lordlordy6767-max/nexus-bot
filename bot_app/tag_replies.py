@@ -39,6 +39,8 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             "`coinflip` • `dice` • `8ball`\n\n"
             "**🎤 MUSIC / FUN:**\n"
             "`sing` • `sing for @user` • `rap @user`\n\n"
+            "**👤 INFO:**\n"
+            "`who is @user` • `avatar @user` • `joined @user` • `message @user`\n\n"
             "**🤖 BOT:**\n"
             "`are you real` • `are you smart` • `ping` • `hello`\n\n"
             "Or use `/help` for ALL commands!"
@@ -194,7 +196,52 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         await message.reply("Pong! 🏓")
     elif any(w in text for w in ["hello", "hi", "hey", "yo"]):
         await message.reply(f"Hello {author.mention}! Welcome to the future. 🔥")
+    # --- NEW ONES ---
+    elif "message" in text or "messages" in text:
+        count = 0
+        try:
+            import json, os
+            if os.path.exists("message_counts.json"):
+                with open("message_counts.json") as f:
+                    data = json.load(f)
+                    count = data.get(str(message.guild.id), {}).get(str(target.id), 0)
+        except:
+            count = 0
+        await message.reply(f"💬 {target_mention} has sent **{count}** messages in this server!")
+    elif "avatar" in text or "pfp" in text or "profile pic" in text:
+        await message.reply(f"🖼️ Avatar of {target_mention}:\n{target.display_avatar.url}")
+    elif "joined" in text or "when did" in text:
+        joined = target.joined_at.strftime("%d %B %Y") if target.joined_at else "Unknown"
+        await message.reply(f"📅 {target_mention} joined this server on **{joined}**")
+    elif "who is" in text:
+        joined = target.joined_at.strftime("%d %B %Y") if target.joined_at else "Unknown"
+        created = target.created_at.strftime("%d %B %Y") if target.created_at else "Unknown"
+        roles = ", ".join([r.mention for r in target.roles[1:]]) if len(target.roles) > 1 else "No roles"
+        await message.reply(
+            f"**👤 Who is {target_mention}?**\n\n"
+            f"**Joined Server:** {joined}\n"
+            f"**Account Created:** {created}\n"
+            f"**Roles:** {roles}\n"
+            f"**ID:** `{target.id}`"
+        )
     else:
         await message.reply(f"Yo, what's up {author.mention}? You called me? Tag me + `list` to see what I can do! Or use `/help`")
 
     return True
+
+# --- ANTI-DOUBLE FIX - AT VERY END ---
+_seen_ids = set()
+_original_handle_tag_reply = handle_tag_reply
+
+async def handle_tag_reply(bot, message):
+    # If we already handled this message, ignore the 2nd call
+    if message.id in _seen_ids:
+        return True
+    _seen_ids.add(message.id)
+
+    # keep list small so it doesn't grow forever
+    if len(_seen_ids) > 2000:
+        _seen_ids.clear()
+        _seen_ids.add(message.id)
+
+    return await _original_handle_tag_reply(bot, message)

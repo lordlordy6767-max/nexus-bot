@@ -78,6 +78,23 @@ class NexusBot(discord.Client):
         await handle_member_join(self.store, member)
 
     async def on_message(self, message: discord.Message) -> None:
+        # --- MESSAGE COUNT - MUST BE FIRST ---
+        if not message.author.bot and message.guild:
+            try:
+                import json, os
+                counts = {}
+                if os.path.exists("message_counts.json"):
+                    with open("message_counts.json") as f:
+                        counts = json.load(f)
+                gid = str(message.guild.id)
+                uid = str(message.author.id)
+                counts.setdefault(gid, {}).setdefault(uid, 0)
+                counts[gid][uid] += 1
+                with open("message_counts.json", "w") as f:
+                    json.dump(counts, f)
+            except:
+                pass
+
         if await handle_tag_reply(self, message):
             return
         if await handle_automod(self.store, message):
