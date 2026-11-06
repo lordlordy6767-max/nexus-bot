@@ -7,13 +7,14 @@ from discord import app_commands
 
 from bot_app.branding import PURPLE, brand_embed
 
-MODLOG_CHANNELS: dict[int, int] = {}
+MODLOG_CHANNELS: dict[int, dict[str, int]] = {}
 WELCOME_CHANNELS: dict[int, int] = {}
 FAREWELL_CHANNELS: dict[int, int] = {}
 MOD_ROLES: dict[int, int] = {}
 
-async def _log(guild: discord.Guild, embed: discord.Embed) -> None:
-    channel_id = MODLOG_CHANNELS.get(guild.id)
+async def _log(guild: discord.Guild, embed: discord.Embed, log_type: str = "all") -> None:
+    channels = MODLOG_CHANNELS.get(guild.id, {})
+    channel_id = channels.get(log_type) or channels.get("all")
     if not channel_id:
         return
     channel = guild.get_channel(channel_id)
@@ -257,11 +258,26 @@ def register_moderation(bot: discord.Client) -> None:
         app_commands.Choice(name="farewell - Farewell channel", value="farewell"),
         app_commands.Choice(name="modrole - Mod role", value="modrole"),
     ])
+    @app_commands.choices(log_type=[
+        app_commands.Choice(name="all - Fallback for all", value="all"),
+        app_commands.Choice(name="ban", value="ban"),
+        app_commands.Choice(name="unban", value="unban"),
+        app_commands.Choice(name="kick", value="kick"),
+        app_commands.Choice(name="mute", value="mute"),
+        app_commands.Choice(name="unmute", value="unmute"),
+        app_commands.Choice(name="warn", value="warn"),
+        app_commands.Choice(name="clear", value="clear"),
+        app_commands.Choice(name="lock", value="lock"),
+        app_commands.Choice(name="unlock", value="unlock"),
+        app_commands.Choice(name="lockdown", value="lockdown"),
+        app_commands.Choice(name="unlockdown", value="unlockdown"),
+    ])
     async def set_cmd(
         interaction: discord.Interaction,
         action: str,
         channel: discord.TextChannel = None,
         role: discord.Role = None,
+        log_type: str = "all",
     ) -> None:
         guild = interaction.guild
         if guild is None:
@@ -272,7 +288,7 @@ def register_moderation(bot: discord.Client) -> None:
             if not channel:
                 await _send_error(interaction, "Pick a channel! Example: /set mod #mod-logs")
                 return
-            MODLOG_CHANNELS[guild.id] = channel.id
+            MODLOG_CHANNELS.setdefault(guild.id, {})[log_type] = channel.id
             await interaction.response.send_message(
                 embed=brand_embed("Mod Logs Set", f"Mod logs will now go to {channel.mention}", color=PURPLE),
                 ephemeral=True,
@@ -325,7 +341,7 @@ def register_modlog_setup(bot: discord.Client) -> None:
         if not user.guild_permissions.manage_guild:
             await interaction.response.send_message("You need Manage Server to do this.", ephemeral=True)
             return
-        MODLOG_CHANNELS[guild.id] = channel.id
+        MODLOG_CHANNELS.setdefault(guild.id, {})["all"] = channel.id
         embed = discord.Embed(title="Mod Logs Set", description=f"Mod logs will now go to {channel.mention}", color=PURPLE)
         await interaction.response.send_message(embed=embed, ephemeral=True)
         await channel.send(
