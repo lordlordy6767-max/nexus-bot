@@ -1,8 +1,36 @@
 import discord
 import random
 
+OWNER_ID = 1545810202232885258  # starrlightz - ONLY YOU can use stats
+
+TRUTHS = [
+    "What's the most embarrassing thing you've ever done?",
+    "Who's your secret crush right now?",
+    "What's the biggest lie you've ever told?",
+    "What's the weirdest thing you've searched on your phone?",
+    "Have you ever stalked an ex on socials? Be honest 👀",
+    "What's the most cringe DM you've ever sent?",
+]
+DARES = [
+    "Send the last photo in your camera roll to this chat 📸",
+    "Change your nickname to 'Nexus owns me' for 10 minutes",
+    "Send a voice note singing the chorus of any song 🎤",
+    "Do your best impression of someone in this server",
+    "Text 'hey' to the 3rd person in your recent DMs and screenshot it",
+]
+QUOTES = [
+    "Don't chase. Attract. - Nexus 👑",
+    "Move in silence, let results make noise.",
+    "Kings don't beg for a seat. They build the table.",
+]
+HYPES = [
+    "Certified LEGEND. No debate 👑",
+    "Main character energy only. Everyone else is background.",
+    "Too clean. Too real. Too dangerous 🔥",
+    "If aura was a person, it would be you.",
+]
+
 async def handle_tag_reply(bot, message: discord.Message) -> bool:
-    # Return True if we replied, False if not
     if message.author.bot:
         return False
     if bot.user is None:
@@ -12,8 +40,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
 
     text = message.content.lower()
     author = message.author
-
-    # Get target = first mentioned user who is NOT the bot
     targets = [m for m in message.mentions if m.id != bot.user.id]
     target = targets[0] if targets else None
     target2 = targets[1] if len(targets) > 1 else None
@@ -26,7 +52,7 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             "**👑 KING:**\n"
             "`who is the king` • `who is the goat` • `who is your developer` • `praise @user` • `crown @user`\n\n"
             "**🔥 COOK / ROAST:**\n"
-            "`cook @user` • `roast @user` • `rate @user` • `expose @user` • `cancel @user`\n\n"
+            "`cook @user` • `roast @user` • `rate @user` • `expose @user` • `cancel @user` • `hype @user`\n\n"
             "**❤️ LOVE:**\n"
             "`love you` • `hug @user` • `kiss @user` • `ship @user @user` • `marry @user` • `marry me`\n\n"
             "**🥊 FIGHT:**\n"
@@ -36,9 +62,9 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             "**🔮 PREDICT:**\n"
             "`predict @user` • `fortune @user` • `when will @user get married`\n\n"
             "**🎲 GAME / LUCK:**\n"
-            "`coinflip` • `dice` • `8ball`\n\n"
+            "`coinflip` • `dice` • `8ball` • `truth or dare @user` • `truth @user` • `dare @user` • `pick pizza or burger`\n\n"
             "**🎤 MUSIC / FUN:**\n"
-            "`sing` • `sing for @user` • `rap @user`\n\n"
+            "`sing` • `sing for @user` • `rap @user` • `quote` • `hype @user`\n\n"
             "**👤 INFO:**\n"
             "`who is @user` • `avatar @user` • `joined @user` • `message @user`\n\n"
             "**🤖 BOT:**\n"
@@ -46,6 +72,48 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             "Or use `/help` for ALL commands!"
         )
         return True
+
+    # --- OWNER ONLY STATS ---
+    elif "stats" in text:
+        if message.author.id != OWNER_ID:
+            await message.reply("Nah, this one is King-only 👑")
+            return True
+        total_servers = len(bot.guilds)
+        total_users = sum(g.member_count or 0 for g in bot.guilds)
+        server_list = "\n".join([f"- {g.name} ({g.member_count} members)" for g in bot.guilds[:10]])
+        await message.reply(f"📊 **Nexus Stats**\nServers: **{total_servers}**\nTotal Users: **{total_users}**\n\nTop Servers:\n{server_list}")
+        return True
+
+    # --- NEW: TRUTH OR DARE ---
+    elif "truth or dare" in text:
+        if not target:
+            await message.reply("Tag someone King! Like: `@Nexus truth or dare @Friend`")
+        else:
+            if random.choice([True, False]):
+                await message.reply(f"{target_mention} - **TRUTH** 👀\n{random.choice(TRUTHS)}\n\nYou have to answer, no skipping!")
+            else:
+                await message.reply(f"{target_mention} - **DARE** 🔥\n{random.choice(DARES)}\n\nDo it or you're scared 😈")
+        return True
+    elif text.strip().endswith("truth") or " truth " in text or "truth @" in text:
+        # Avoid catching "truth or dare" already handled above
+        if target:
+            await message.reply(f"{target_mention} - **TRUTH** 👀\n{random.choice(TRUTHS)}")
+            return True
+    elif " dare " in text or text.strip().endswith("dare") or "dare @" in text:
+        if target:
+            await message.reply(f"{target_mention} - **DARE** 🔥\n{random.choice(DARES)}")
+            return True
+    elif "hype" in text:
+        await message.reply(f"{target_mention} {random.choice(HYPES)}")
+        return True
+    elif "quote" in text:
+        await message.reply(f"\"{random.choice(QUOTES)}\"")
+        return True
+    elif "pick" in text and " or " in text:
+        parts = text.split("pick", 1)[1].strip().split(" or ")
+        if len(parts) >= 2:
+            await message.reply(f"I pick **{random.choice(parts).strip()}** 👑 No debate.")
+            return True
 
     # --- DEVELOPER ---
     elif "who is your developer" in text or "who made you" in text or "who created you" in text or "who is your creator" in text:
@@ -196,7 +264,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         await message.reply("Pong! 🏓")
     elif any(w in text for w in ["hello", "hi", "hey", "yo"]):
         await message.reply(f"Hello {author.mention}! Welcome to the future. 🔥")
-    # --- NEW ONES ---
     elif "message" in text or "messages" in text:
         count = 0
         try:
@@ -226,7 +293,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         )
     else:
         await message.reply(f"Yo, what's up {author.mention}? You called me? Tag me + `list` to see what I can do! Or use `/help`")
-
     return True
 
 # --- ANTI-DOUBLE FIX - AT VERY END ---
@@ -234,14 +300,10 @@ _seen_ids = set()
 _original_handle_tag_reply = handle_tag_reply
 
 async def handle_tag_reply(bot, message):
-    # If we already handled this message, ignore the 2nd call
     if message.id in _seen_ids:
         return True
     _seen_ids.add(message.id)
-
-    # keep list small so it doesn't grow forever
     if len(_seen_ids) > 2000:
         _seen_ids.clear()
         _seen_ids.add(message.id)
-
     return await _original_handle_tag_reply(bot, message)
