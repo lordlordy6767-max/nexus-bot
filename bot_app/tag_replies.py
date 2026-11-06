@@ -30,6 +30,41 @@ HYPES = [
     "If aura was a person, it would be you.",
 ]
 
+# --- NEW HELPERS FOR LOVE / GENDER ---
+def get_gender(member):
+    if member is None:
+        return "unknown"
+    role_names = [r.name.lower() for r in member.roles]
+    if "female" in role_names or "girl" in role_names or "she" in role_names or "queen" in role_names:
+        return "female"
+    if "male" in role_names or "boy" in role_names or "he" in role_names or "king" in role_names:
+        return "male"
+    return "unknown"
+
+def get_random_member(message, bot):
+    members = [m for m in message.guild.members if not m.bot]
+    nexus = discord.utils.get(message.guild.members, name="Nexus")
+    if nexus and nexus not in members:
+        members.append(nexus)
+    return random.choice(members) if members else message.author
+
+def get_opposite_gender_member(message, target_user):
+    target_gender = get_gender(target_user)
+    if target_gender == "unknown":
+        return get_random_member(message, None)
+    wanted = "female" if target_gender == "male" else "male"
+    candidates = []
+    for m in message.guild.members:
+        if m.bot and m.name != "Nexus":
+            continue
+        if m.id == target_user.id:
+            continue
+        if get_gender(m) == wanted:
+            candidates.append(m)
+    if not candidates:
+        return get_random_member(message, None)
+    return random.choice(candidates)
+
 async def handle_tag_reply(bot, message: discord.Message) -> bool:
     if message.author.bot:
         return False
@@ -54,15 +89,17 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             "**🔥 COOK / ROAST:**\n"
             "`cook @user` • `roast @user` • `rate @user` • `expose @user` • `cancel @user` • `hype @user`\n\n"
             "**❤️ LOVE:**\n"
-            "`love you` • `hug @user` • `kiss @user` • `ship @user @user` • `marry @user` • `marry me`\n\n"
+            "`love you` • `hug @user` • `kiss @user` • `ship @user @user` • `marry @user` • `marry me` • `who is @user soulmate` • `who will @user marry`\n\n"
             "**🥊 FIGHT:**\n"
             "`fight @user` • `slap @user` • `vs @user` • `jumpscare @user` • `bonk @user` • `bite @user` • `lick @user` • `kill @user` • `arrest @user` • `jail @user`\n\n"
             "**✨ AURA / RIZZ:**\n"
-            "`aura @user` • `rizz @user` • `vibe check @user` • `how gay is @user` • `how smart is @user` • `how rich is @user` • `iq @user` • `dumbest @user` • `smartest @user` • `pat @user`\n\n"
+            "`aura @user` • `who has the most aura` • `who has aura` • `rizz @user` • `vibe check @user` • `how gay is @user` • `how smart is @user` • `how rich is @user` • `iq @user` • `dumbest @user` • `smartest @user` • `pat @user`\n\n"
             "**🔮 PREDICT:**\n"
-            "`predict @user` • `fortune @user` • `when will @user get married`\n\n"
+            "`predict @user` • `fortune @user` • `when will @user get married` • `when will @user get rich`\n\n"
             "**🎲 GAME / LUCK:**\n"
             "`coinflip` • `dice` • `8ball` • `truth or dare @user` • `truth @user` • `dare @user` • `pick pizza or burger`\n\n"
+            "**😂 SERVER SUPERLATIVES:**\n"
+            "`who is the funniest` • `who is the biggest yapper` • `who yaps the most`\n\n"
             "**🎤 MUSIC / FUN:**\n"
             "`sing` • `sing for @user` • `rap @user` • `quote` • `hype @user`\n\n"
             "**📖 STORY TIME:**\n"
@@ -97,7 +134,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
                 await message.reply(f"{target_mention} - **DARE** 🔥\n{random.choice(DARES)}\n\nDo it or you're scared 😈")
         return True
     elif text.strip().endswith("truth") or " truth " in text or "truth @" in text:
-        # Avoid catching "truth or dare" already handled above
         if target:
             await message.reply(f"{target_mention} - **TRUTH** 👀\n{random.choice(TRUTHS)}")
             return True
@@ -169,6 +205,16 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         await message.reply(f"🤗 {author.mention} gives {target_mention} a BIG hug! Wholesome moment 🥹❤️")
     elif "kiss" in text:
         await message.reply(f"😘 {author.mention} kisses {target_mention}... OKAY GET A ROOM 😭❤️")
+    # --- NEW: SOULMATE + WHO WILL MARRY (GENDER AWARE) - MUST BE BEFORE GENERIC MARRY ---
+    elif "soulmate" in text:
+        user = target if target else author
+        soul = get_opposite_gender_member(message, user)
+        await message.reply(f"{user.mention}'s soulmate is {soul.mention} ❤️")
+    elif "who will" in text and "marry" in text:
+        user = target if target else author
+        partner = get_opposite_gender_member(message, user)
+        verb = random.choice(["will", "may", "might"])
+        await message.reply(f"{user.mention} {verb} marry {partner.mention}, do you agree? Yes/No")
     elif "marry" in text:
         if "marry me" in text:
             await message.reply(f"Sorry {author.mention} 💍 I'm already married to the grind. My developer said no.")
@@ -202,6 +248,17 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
     elif "vibe check" in text:
         score = random.randint(0, 100)
         await message.reply(f"✨ VIBE CHECK for {target_mention}: **{score}%** {'IMMACULATE VIBES 🔥' if score >= 80 else 'Vibes are OFF 😭' if score < 30 else 'Mid vibes 👀'}")
+    # --- NEW: WHO HAS MOST AURA / FUNNIEST / BIGGEST YAPPER - MUST BE BEFORE GENERIC AURA ---
+    elif "who has" in text and "aura" in text:
+        winner = get_random_member(message, bot)
+        aura = random.randint(100, 10000)
+        await message.reply(f"{winner.mention} has the most aura in this server! ✨ {aura} aura")
+    elif "funniest" in text:
+        winner = get_random_member(message, bot)
+        await message.reply(f"{winner.mention} is the funniest in this server 😂")
+    elif "biggest yapper" in text or "yaps the most" in text or "biggest yap" in text:
+        winner = get_random_member(message, bot)
+        await message.reply(f"{winner.mention} never stops yapping 💀 Biggest yapper in this server!")
     elif "aura" in text:
         aura = random.randint(-1000, 10000)
         await message.reply(f"✨ {target_mention} has **{aura} aura** {'👑 AURA FARMER' if aura > 5000 else '💀 NEGATIVE AURA' if aura < 0 else 'Solid aura 👍'}")
@@ -240,6 +297,13 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             f"🥠 Fortune for {target_mention}: Your crush will text you soon... maybe.",
         ]
         await message.reply(random.choice(fortunes))
+    # --- NEW: WHEN WILL GET RICH - MUST BE BEFORE WHEN WILL MARRIED ---
+    elif "when will" in text and "get rich" in text:
+        user = target if target else author
+        months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+        month = random.choice(months)
+        year = random.randint(2027, 2045)
+        await message.reply(f"{user.mention} will get rich in {month} {year}! Start saving 💰")
     elif "when will" in text and "married" in text:
         year = random.randint(2027, 2045)
         await message.reply(f"💍 {target_mention} will get married in **{year}**! Start saving for the wedding 😭💍")

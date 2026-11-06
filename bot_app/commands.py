@@ -87,16 +87,20 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     async def hello(interaction: discord.Interaction) -> None:
         await interaction.response.send_message(embed=brand_embed("Welcome to NEXUS V1", f"Hello {interaction.user.mention}! Welcome to the future."), allowed_mentions=discord.AllowedMentions(users=True, roles=False, everyone=False))
 
-    @bot.tree.command(name="send", description="Make NEXUS send a message for you.")
-    async def send(interaction: discord.Interaction, message: str, channel: discord.TextChannel | None = None) -> None:
-        await interaction.response.defer(ephemeral=True)
-        target = channel or interaction.channel
-        try:
-            await target.send(message)
-            await interaction.followup.send(f"Sent to {target.mention}! ✅", ephemeral=True)
-        except Exception as e:
-            print(f"SEND ERROR by {interaction.user}: {e}")
-            await interaction.followup.send(f"Couldn't send there: {e}", ephemeral=True)
+@bot.tree.command(name="send", description="Make NEXUS send a message for you.")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+async def send(interaction: discord.Interaction, message: str, channel: discord.TextChannel | None = None) -> None:
+    await interaction.response.defer(ephemeral=True)
+    target = channel or interaction.channel
+    try:
+        await target.send(message)
+        # target.mention doesn't exist in DMs, so handle it
+        where = target.mention if hasattr(target, 'mention') else "this DM"
+        await interaction.followup.send(f"Sent to {where}! ✅", ephemeral=True)
+    except Exception as e:
+        print(f"SEND ERROR by {interaction.user}: {e}")
+        await interaction.followup.send(f"Couldn't send there: {e}", ephemeral=True)
 
     @bot.tree.command(name="greet", description="Make NEXUS greet someone.")
     @app_commands.describe(user="Who should I greet?")
