@@ -21,9 +21,16 @@ from bot_app.tickets import register_tickets
 logger = logging.getLogger("discord_bot.commands")
 
 async def _log_commands(guild: discord.Guild, embed: discord.Embed) -> None:
-    channel_id = MODLOG_CHANNELS.get(guild.id)
-    if not channel_id:
+    entry = MODLOG_CHANNELS.get(guild.id)
+    if not entry:
         return
+    # NEW: entry can be {"mod": 123} or old int 123
+    if isinstance(entry, dict):
+        channel_id = entry.get("mod") or entry.get("all") or entry.get("modlog")
+        if not channel_id:
+            return
+    else:
+        channel_id = entry
     channel = guild.get_channel(channel_id)
     if isinstance(channel, discord.TextChannel):
         try:
