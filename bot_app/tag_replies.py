@@ -45,7 +45,7 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
     target2 = targets[1] if len(targets) > 1 else None
     target_mention = target.mention if target else author.mention
 
-    # LIST - Show all tag commands
+# LIST - Show all tag commands
     if "list" in text or "commands" in text:
         await message.reply(
             "**What you can say after tagging me:**\n\n"
@@ -65,6 +65,8 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             "`coinflip` • `dice` • `8ball` • `truth or dare @user` • `truth @user` • `dare @user` • `pick pizza or burger`\n\n"
             "**🎤 MUSIC / FUN:**\n"
             "`sing` • `sing for @user` • `rap @user` • `quote` • `hype @user`\n\n"
+            "**📖 STORY TIME:**\n"
+            "`tell me a story` • `tell me a spooky story` • `tell me a sweet story` • `tell me a funny story` • `tell me a motivational story` • `story time`\n\n"
             "**👤 INFO:**\n"
             "`who is @user` • `avatar @user` • `joined @user` • `message @user`\n\n"
             "**🤖 BOT:**\n"
