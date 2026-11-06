@@ -425,32 +425,35 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     async def ticket_panel(interaction: discord.Interaction):
         await interaction.response.send_message(embed=brand_embed("🎫 NEXUS Support", "Need help? Click below to open a ticket!\n\nOur staff will assist you ASAP."), view=TicketView())
 
-    @bot.tree.command(name="help", description="See all NEXUS commands.")
-    async def help_cmd(interaction: discord.Interaction) -> None:
-        text = (
-        "**👋 Welcome / Fun**\n"
-        "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball` `/dice` `/rps` `/memes` `/trivia`\n\n"
-        "**📊 Community**\n"
-        "`/poll` `/rank` `/leaderboard` `/messages` `/userinfo` `/serverinfo`\n\n"
-        "**🎰 Games / Casino**\n"
-        "`/coinflip` `/slots` `/blackjack`\n\n"
-        "**💰 Economy**\n"
-        "`/balance` `/daily` `/work` `/pay` `/buy` `/shop` `/topmoney`\n\n"
-        "**📢 Staff**\n"
-        "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
-        "**🛡️ Security**\n"
-        "`/antinuke` `/antiraid` `/lock` `/unlock` `/lockdown` `/unlockdown` `/automod configure` `/automod status`\n\n"
-        "**🎁 Giveaway**\n"
-        "`/giveaway`\n\n"
-        "**🎫 Tickets**\n"
-        "`/ticket-panel` `/ticket-setup` `/list-roles`\n\n"
-        "**🎭 Reaction Roles**\n"
-        "`/reaction-role-setup` - Single role panel\n"
-        "`/reaction-roles-setup` - Multi role panel (up to 10 roles)\n\n"
-        "**⚙️ Setup / System**\n"
-        "`/ping` `/help` `/verify` `/set` `/set-modlogs` `/welcome set` `/welcome disable`\n\n"
-        "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
-    )
+@bot.tree.command(name="help", description="See all NEXUS commands.")
+async def help_cmd(interaction: discord.Interaction) -> None:
+    text = (
+    "**👋 Welcome / Fun**\n"
+    "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball` `/dice` `/rps` `/memes` `/trivia`\n\n"
+    "**👑 V3 - Welcome & Starboard**\n"
+    "`/welcome-setup` - Setup welcome image card\n"
+    "`/starboard-setup` - Setup starboard channel\n\n"
+    "**📊 Community**\n"
+    "`/poll` `/rank` `/leaderboard` `/messages` `/userinfo` `/serverinfo`\n\n"
+    "**🎰 Games / Casino**\n"
+    "`/coinflip` `/slots` `/blackjack`\n\n"
+    "**💰 Economy**\n"
+    "`/balance` `/daily` `/work` `/pay` `/buy` `/shop` `/topmoney`\n\n"
+    "**📢 Staff**\n"
+    "`/send` `/dm` `/announce` `/warn` `/ban` `/kick` `/mute` `/unmute` `/unban` `/clear`\n\n"
+    "**🛡️ Security**\n"
+    "`/antinuke` `/antiraid` `/lock` `/unlock` `/lockdown` `/unlockdown` `/automod configure` `/automod status`\n\n"
+    "**🎁 Giveaway**\n"
+    "`/giveaway` `/giveaway-reroll` `/giveaway-end`\n\n"
+    "**🎫 Tickets**\n"
+    "`/ticket-panel` `/ticket-setup` `/list-roles`\n\n"
+    "**🎭 Reaction Roles**\n"
+    "`/reaction-role-setup` - Single role panel\n"
+    "`/reaction-roles-setup` - Multi role panel (up to 10 roles)\n\n"
+    "**⚙️ Setup / System**\n"
+    "`/ping` `/help` `/verify` `/set` `/set-modlogs` `/welcome set` `/welcome disable`\n\n"
+    "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
+)
         await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
 async def handle_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.MissingPermissions):
