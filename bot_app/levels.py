@@ -7,22 +7,18 @@ import discord
 from discord import app_commands
 
 from bot_app.branding import PURPLE, brand_embed
-from bot_app.storage import BotStore
+from bot_app.db import get_xp, add_xp, get_leaderboard, get_messages
 
 _XP_COOLDOWN_SECONDS = 60
 _last_xp_award: dict[tuple[int, int], float] = {}
 
-
 def level_for_xp(total_xp: int) -> int:
     return int((max(0, total_xp) / 100) ** 0.5)
-
 
 def next_level_xp(level: int) -> int:
     return (level + 1) ** 2 * 100
 
-
 async def handle_level_message(
-    store: BotStore,
     message: discord.Message,
 ) -> None:
     guild = message.guild
@@ -37,8 +33,8 @@ async def handle_level_message(
         return
     _last_xp_award[key] = now
 
-    previous_xp = await store.get_xp(guild.id, member.id)
-    new_xp = await store.add_xp(
+    previous_xp = await get_xp(guild.id, member.id)
+    new_xp = await add_xp(
         guild.id,
         member.id,
         random.randint(15, 25),
@@ -65,8 +61,7 @@ async def handle_level_message(
     except (discord.Forbidden, discord.HTTPException):
         pass
 
-
-def register_levels(bot: discord.Client, store: BotStore) -> None:
+def register_levels(bot: discord.Client) -> None:
     @bot.tree.command(name="rank", description="View a member's NEXUS level.")
     @app_commands.guild_only()
     async def rank(
@@ -77,7 +72,8 @@ def register_levels(bot: discord.Client, store: BotStore) -> None:
         if guild is None:
             return
         subject = member or interaction.user
-        total_xp = await store.get_xp(guild.id, subject.id)
+        total_xp = await get_xp(guild.id, subject.id)
+        msgs = await get_messages(guild.id, subject.id)
         level = level_for_xp(total_xp)
         current_level_xp = level * level * 100
         target_xp = next_level_xp(level)
@@ -89,12 +85,29 @@ def register_levels(bot: discord.Client, store: BotStore) -> None:
             f"{subject.display_name}'s Rank",
             f"**Level:** {level}\n"
             f"**XP:** {total_xp:,}\n"
+            f"**Messages:** {msgs:,}\n"
             f"**Next level:** {progress_xp:,} / {needed_xp:,} XP "
             f"({progress_percent}%)",
             color=PURPLE,
         )
         embed.set_thumbnail(url=subject.display_avatar.url)
         await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="messages", description="Check how many messages you sent.")
+    @app_commands.guild_only()
+    async def messages(
+        interaction: discord.Interaction,
+        member: discord.Member | None = None,
+    ) -> None:
+        guild = interaction.guild
+        if guild is None:
+            return
+        subject = member or interaction.user
+        msgs = await get_messages(guild.id, subject.id)
+        await interaction.response.send_message(
+            embed=brand_embed("💬 Messages", f"{subject.mention} has sent **{msgs:,}** messages"),
+            ephemeral=True
+        )
 
     @bot.tree.command(
         name="leaderboard",
@@ -105,7 +118,7 @@ def register_levels(bot: discord.Client, store: BotStore) -> None:
         guild = interaction.guild
         if guild is None:
             return
-        rows = await store.get_leaderboard(guild.id, limit=10)
+        rows = await get_leaderboard(guild.id, limit=10)
         if not rows:
             await interaction.response.send_message(
                 "No one has earned XP yet. Chat to get on the leaderboard!",

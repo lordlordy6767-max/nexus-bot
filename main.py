@@ -77,30 +77,31 @@ class NexusBot(discord.Client):
     async def on_member_join(self, member: discord.Member) -> None:
         await handle_member_join(self.store, member)
 
-    async def on_message(self, message: discord.Message) -> None:
-        # --- MESSAGE COUNT - MUST BE FIRST ---
-        if not message.author.bot and message.guild:
-            try:
-                import json, os
-                counts = {}
-                if os.path.exists("message_counts.json"):
-                    with open("message_counts.json") as f:
-                        counts = json.load(f)
-                gid = str(message.guild.id)
-                uid = str(message.author.id)
-                counts.setdefault(gid, {}).setdefault(uid, 0)
-                counts[gid][uid] += 1
-                with open("message_counts.json", "w") as f:
-                    json.dump(counts, f)
-            except:
-                pass
+    async def on_message(self, message):
+        # --- STORY MODE ---
+        if not message.author.bot and message.guild and self.user in message.mentions:
+            text = message.content.lower()
+            if "tell" in text and "story" in text or "story time" in text:
+                from bot_app.story import get_story
+                kind = None
+                if "spooky" in text or "scary" in text or "horror" in text or "creepy" in text:
+                    kind = "spooky"
+                elif "sweet" in text or "cute" in text or "love" in text or "wholesome" in text:
+                    kind = "sweet"
+                elif "funny" in text or "joke" in text or "laugh" in text:
+                    kind = "funny"
+                elif "motivational" in text or "inspire" in text or "motivate" in text:
+                    kind = "motivational"
+                kind, story = get_story(kind)
+                emoji = {"spooky": "👻", "sweet": "💛", "funny": "😂", "motivational": "🔥"}.get(kind, "📖")
+                await message.reply(f"{emoji} **{kind.capitalize()} Story Time**\n\n{story}\n\n*Want another? Say `@NEXUS tell me a spooky story` or `sweet / funny / motivational`*")
+                return
 
         if await handle_tag_reply(self, message):
             return
         if await handle_automod(self.store, message):
             return
-        await handle_level_message(self.store, message)
-
+        await handle_level_message(message)
     async def on_raw_reaction_add(
         self,
         payload: discord.RawReactionActionEvent,

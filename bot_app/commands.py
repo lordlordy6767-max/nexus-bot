@@ -73,7 +73,7 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     register_modlog_setup(bot)
     register_tickets(bot, store)
     register_reaction_roles(bot, store)
-    register_levels(bot, store)
+    register_levels(bot)
     register_antinuke(bot)
 
     @bot.tree.command(name="ping", description="Check NEXUS V1 latency.")
@@ -378,46 +378,47 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
                 await channel.send(f"Giveaway for **{prize}** failed to pick winner: `{e}`")
             except Exception as e2:
                 print(f"GIVEAWAY SEND ERROR: {e2}")
-    # ===== ECONOMY =====
+# ===== ECONOMY - SUPABASE VERSION - FIXED =====
     @bot.tree.command(name="balance", description="Check your coins.")
     async def balance(interaction: discord.Interaction, user: discord.User | None = None):
-        from bot_app.wallet import get_bal as _get_bal
+        from bot_app.db import get_bal as _get_bal
         u = user or interaction.user
-        await interaction.response.send_message(embed=brand_embed("💰 Balance", f"{u.mention} has **{_get_bal(u.id)}** coins 🪙"), ephemeral=True)
+        bal = await _get_bal(interaction.guild.id, u.id)
+        await interaction.response.send_message(embed=brand_embed("💰 Balance", f"{u.mention} has **{bal}** coins 🪙"), ephemeral=True)
 
     @bot.tree.command(name="daily", description="Claim your daily coins.")
     async def daily(interaction: discord.Interaction):
-        from bot_app.wallet import get_bal as _get_bal, add as _add, get_daily_last, set_daily
+        from bot_app.db import get_daily_last, set_daily, add as _add
         now = time.time()
-        last = get_daily_last(interaction.user.id)
+        last = await get_daily_last(interaction.guild.id, interaction.user.id)
         if now - last < 86400:
             hrs = int((86400 - (now - last)) / 3600)
             await interaction.response.send_message(embed=brand_embed("⏳ Daily", f"Already claimed! Come back in **{hrs}h**"), ephemeral=True)
             return
-        set_daily(interaction.user.id, now)
-        new_bal = _add(interaction.user.id, 500)
+        await set_daily(interaction.guild.id, interaction.user.id, now)
+        new_bal = await _add(interaction.guild.id, interaction.user.id, 500)
         await interaction.response.send_message(embed=brand_embed("💰 Daily Claimed!", f"+500 coins! 🪙\nNew balance: **{new_bal}**"))
 
     @bot.tree.command(name="work", description="Work for coins.")
     async def work(interaction: discord.Interaction):
-        from bot_app.wallet import get_bal as _get_bal, add as _add
+        from bot_app.db import add as _add
         jobs = ["You coded for NEXUS 💻", "You guarded the server 🛡️", "You sold memes 😂", "You streamed on Twitch 🎮"]
         earn = random.randint(50, 250)
-        new_bal = _add(interaction.user.id, earn)
+        new_bal = await _add(interaction.guild.id, interaction.user.id, earn)
         await interaction.response.send_message(embed=brand_embed("💼 Work", f"{random.choice(jobs)}\n+**{earn}** coins! Balance: **{new_bal}**"))
 
     @bot.tree.command(name="pay", description="Pay someone coins.")
     @app_commands.describe(user="Who to pay?", amount="How much?")
     async def pay(interaction: discord.Interaction, user: discord.User, amount: int):
-        from bot_app.wallet import get_bal as _get_bal, add as _add
+        from bot_app.db import get_bal as _get_bal, add as _add
         if amount <= 0:
             await interaction.response.send_message("Amount must be > 0", ephemeral=True); return
-        if _get_bal(interaction.user.id) < amount:
-            await interaction.response.send_message(f"You only have {_get_bal(interaction.user.id)} coins!", ephemeral=True); return
-        _add(interaction.user.id, -amount)
-        _add(user.id, amount)
+        bal = await _get_bal(interaction.guild.id, interaction.user.id)
+        if bal < amount:
+            await interaction.response.send_message(f"You only have {bal} coins!", ephemeral=True); return
+        await _add(interaction.guild.id, interaction.user.id, -amount)
+        await _add(interaction.guild.id, user.id, amount)
         await interaction.response.send_message(embed=brand_embed("💸 Payment", f"{interaction.user.mention} paid {user.mention} **{amount}** coins 🪙"))
-        
     # ===== TICKET PANEL V2 =====
     @bot.tree.command(name="ticket-panel", description="Post ticket panel. Admin only.")
     @app_commands.checks.has_permissions(administrator=True)
