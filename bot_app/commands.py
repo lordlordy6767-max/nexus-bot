@@ -425,9 +425,9 @@ def register_commands(bot: discord.Client, store: BotStore) -> None:
     async def ticket_panel(interaction: discord.Interaction):
         await interaction.response.send_message(embed=brand_embed("🎫 NEXUS Support", "Need help? Click below to open a ticket!\n\nOur staff will assist you ASAP."), view=TicketView())
 
-@bot.tree.command(name="help", description="See all NEXUS commands.")
-async def help_cmd(interaction: discord.Interaction) -> None:
-    text = (
+    @bot.tree.command(name="help", description="See all NEXUS commands.")
+    async def help_cmd(interaction: discord.Interaction) -> None:
+     text = (
     "**👋 Welcome / Fun**\n"
     "`/hello` `/greet` `/goodmorning` `/goodnight` `/shoutout` `/roast` `/8ball` `/dice` `/rps` `/memes` `/trivia`\n\n"
     "**👑 V3 - Welcome & Starboard**\n"
@@ -454,7 +454,7 @@ async def help_cmd(interaction: discord.Interaction) -> None:
     "`/ping` `/help` `/verify` `/set` `/set-modlogs` `/welcome set` `/welcome disable`\n\n"
     "**Tip:** Use `/poll` to vote, `/roast` to have fun, `/announce` for big news!"
     )
-    await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
+     await interaction.response.send_message(embed=brand_embed("🤖 NEXUS V1 - All Commands", text), ephemeral=True)
 async def handle_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:
     if isinstance(error, app_commands.MissingPermissions):
         message = "You do not have permission to use that command."
