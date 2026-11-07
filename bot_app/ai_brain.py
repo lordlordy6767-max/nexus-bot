@@ -19,7 +19,7 @@ Keep replies short for Discord, max 2-3 sentences unless they ask for something 
 def ask_nexus(user_message, username=""):
     try:
         completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"{username} says: {user_message}"}
