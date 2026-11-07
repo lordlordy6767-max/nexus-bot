@@ -34,6 +34,7 @@ from bot_app.games import register_games_commands
 from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
 from bot_app.comeback import handle_comeback
+from ai_brain import ask_nexus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -107,6 +108,17 @@ class NexusBot(discord.Client):
 
         if await handle_tag_reply(self, message):
             return
+                    # --- NEXUS AI BRAIN ---
+        if self.user in message.mentions and message.guild and not message.author.bot:
+            content = message.content
+            # remove the @NEXUS mention
+            content = content.replace(f"<@{self.user.id}>", "").replace(f"<@!{self.user.id}>", "").strip()
+            if content:
+                async with message.channel.typing():
+                    reply = ask_nexus(content, message.author.name)
+                await message.reply(reply)
+                return
+        # --- END AI BRAIN ---
         if await handle_automod(self.store, message):
             return
         await handle_level_message(message)
