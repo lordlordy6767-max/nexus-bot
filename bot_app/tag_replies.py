@@ -1,5 +1,6 @@
 import discord
 import random
+_seen_ids = set()
 
 OWNER_ID = 1545810202232885258  # starrlightz - ONLY YOU can use stats
 
@@ -73,6 +74,12 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
     if bot.user not in message.mentions:
         return False
 
+        if message.id in _seen_ids:
+         return True
+    _seen_ids.add(message.id)
+    if len(_seen_ids) > 2000:
+        _seen_ids.clear()
+        _seen_ids.add(message.id)
     text = message.content.lower()
     author = message.author
     targets = [m for m in message.mentions if m.id != bot.user.id]
@@ -358,18 +365,5 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             f"**ID:** `{target.id}`"
         )
     else:
-        await message.reply(f"Yo, what's up {author.mention}? You called me? Tag me + `list` to see what I can do! Or use `/help`")
+        return False
     return True
-
-# --- ANTI-DOUBLE FIX - AT VERY END ---
-_seen_ids = set()
-_original_handle_tag_reply = handle_tag_reply
-
-async def handle_tag_reply(bot, message):
-    if message.id in _seen_ids:
-        return True
-    _seen_ids.add(message.id)
-    if len(_seen_ids) > 2000:
-        _seen_ids.clear()
-        _seen_ids.add(message.id)
-    return await _original_handle_tag_reply(bot, message)
