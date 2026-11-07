@@ -124,7 +124,7 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             print(f"Pic search failed: {e}")
         
         if pic_url:
-            embed = discord.Embed(title=f"📸 {query.title()}", description=f"Here you go King 👑")
+            embed = discord.Embed(title=f"📸 {query.title()}", description=f"Here you go {message.author.display_name} 👑")
             embed.set_image(url=pic_url)
             embed.set_footer(text=f"Source: {pic_title[:80]}")
             await message.reply(embed=embed)
