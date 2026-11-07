@@ -33,6 +33,7 @@ from bot_app.userinfo import register_info_commands
 from bot_app.games import register_games_commands
 from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
+from bot_app.comeback import handle_comeback
 
 logging.basicConfig(
     level=logging.INFO,
@@ -80,6 +81,11 @@ class NexusBot(discord.Client):
         await handle_member_join(self.store, member)
 
     async def on_message(self, message):
+        if message.author.bot:
+            return
+
+        if await handle_comeback(self, message):
+            return
         # --- STORY MODE ---
         if not message.author.bot and message.guild and self.user in message.mentions:
             text = message.content.lower()
