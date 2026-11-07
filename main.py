@@ -34,7 +34,7 @@ from bot_app.games import register_games_commands
 from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
 from bot_app.comeback import handle_comeback
-from ai_brain import ask_nexus
+from bot_app.ai_brain import ask_nexus
 
 logging.basicConfig(
     level=logging.INFO,
