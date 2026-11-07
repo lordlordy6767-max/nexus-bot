@@ -1,5 +1,7 @@
 import discord
 import random
+import aiohttp
+import urllib.parse
 _seen_ids = set()
 
 OWNER_ID = 1545810202232885258  # starrlightz - ONLY YOU can use stats
@@ -87,6 +89,48 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
     target2 = targets[1] if len(targets) > 1 else None
     target_mention = target.mention if target else author.mention
     words = set(text.replace("!", " ").replace("?", " ").replace(",", " ").replace(".", " ").split())
+        # --- REAL PICS - MUST BE BEFORE AI ---
+    if any(w in text for w in ["send me pic", "send pic", "pic of", "picture of", "photo of", "image of", "send me a pic", "send me photo"]):
+        # Get what they want a pic of
+        query = text
+        for phrase in ["send me pic of", "send me a pic of", "send pic of", "pic of", "picture of", "photo of", "image of", "send me pic", "send me photo"]:
+            if phrase in query:
+                query = query.split(phrase, 1)[1].strip()
+                break
+        # Clean up the mention text
+        query = query.replace("<@!","").replace("<@","").replace(">","").strip()
+        if not query:
+            query = "cool"
+        
+        # Search Openverse - free, no API key needed, real images
+        pic_url = None
+        pic_title = query
+        try:
+            async with aiohttp.ClientSession() as session:
+                url = f"https://api.openverse.org/v1/images/?q={urllib.parse.quote(query)}&page_size=5&license_type=all"
+                async with session.get(url) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get("results"):
+                            # Pick first result with a direct image url
+                            for r in data["results"]:
+                                if r.get("url") and r["url"].lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                                    pic_url = r["url"]
+                                    pic_title = r.get("title", query) or query
+                                    break
+                            if not pic_url:
+                                pic_url = data["results"][0].get("url")
+        except Exception as e:
+            print(f"Pic search failed: {e}")
+        
+        if pic_url:
+            embed = discord.Embed(title=f"📸 {query.title()}", description=f"Here you go King 👑")
+            embed.set_image(url=pic_url)
+            embed.set_footer(text=f"Source: {pic_title[:80]}")
+            await message.reply(embed=embed)
+        else:
+            await message.reply(f"Couldn't find a pic of **{query}** rn 😭 Try again with something else - like `pic of bmw` or `pic of cat`")
+        return True
 
     if "list" in text or "commands" in text:
         await message.reply(
