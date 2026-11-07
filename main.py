@@ -106,9 +106,7 @@ class NexusBot(discord.Client):
                 await message.reply(f"{emoji} **{kind.capitalize()} Story Time**\n\n{story}\n\n*Want another? Say `@NEXUS tell me a spooky story` or `sweet / funny / motivational`*")
                 return
 
-        if await handle_tag_reply(self, message):
-            return
-                    # --- NEXUS AI BRAIN ---
+                # --- NEXUS AI BRAIN ---
         if self.user in message.mentions and message.guild and not message.author.bot:
             content = message.content
             # remove the @NEXUS mention
@@ -119,6 +117,9 @@ class NexusBot(discord.Client):
                 await message.reply(reply)
                 return
         # --- END AI BRAIN ---
+        if await handle_tag_reply(self, message):
+            return
+            
         if await handle_automod(self.store, message):
             return
         await handle_level_message(message)
