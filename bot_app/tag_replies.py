@@ -31,7 +31,6 @@ HYPES = [
     "If aura was a person, it would be you.",
 ]
 
-# --- NEW HELPERS FOR LOVE / GENDER ---
 def get_gender(member):
     if member is None:
         return "unknown"
@@ -74,20 +73,21 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
     if bot.user not in message.mentions:
         return False
 
-        if message.id in _seen_ids:
-         return True
+    if message.id in _seen_ids:
+        return True
     _seen_ids.add(message.id)
     if len(_seen_ids) > 2000:
         _seen_ids.clear()
         _seen_ids.add(message.id)
+
     text = message.content.lower()
     author = message.author
     targets = [m for m in message.mentions if m.id != bot.user.id]
     target = targets[0] if targets else None
     target2 = targets[1] if len(targets) > 1 else None
     target_mention = target.mention if target else author.mention
+    words = set(text.replace("!", " ").replace("?", " ").replace(",", " ").replace(".", " ").split())
 
-# LIST - Show all tag commands
     if "list" in text or "commands" in text:
         await message.reply(
             "**What you can say after tagging me:**\n\n"
@@ -119,7 +119,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         )
         return True
 
-    # --- OWNER ONLY STATS ---
     elif "stats" in text:
         if message.author.id != OWNER_ID:
             await message.reply("Nah, this one is King-only 👑")
@@ -130,7 +129,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         await message.reply(f"📊 **Nexus Stats**\nServers: **{total_servers}**\nTotal Users: **{total_users}**\n\nTop Servers:\n{server_list}")
         return True
 
-    # --- NEW: TRUTH OR DARE ---
     elif "truth or dare" in text:
         if not target:
             await message.reply("Tag someone King! Like: `@Nexus truth or dare @Friend`")
@@ -141,13 +139,15 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
                 await message.reply(f"{target_mention} - **DARE** 🔥\n{random.choice(DARES)}\n\nDo it or you're scared 😈")
         return True
     elif text.strip().endswith("truth") or " truth " in text or "truth @" in text:
-        if target:
-            await message.reply(f"{target_mention} - **TRUTH** 👀\n{random.choice(TRUTHS)}")
-            return True
+        if not target:
+            return False
+        await message.reply(f"{target_mention} - **TRUTH** 👀\n{random.choice(TRUTHS)}")
+        return True
     elif " dare " in text or text.strip().endswith("dare") or "dare @" in text:
-        if target:
-            await message.reply(f"{target_mention} - **DARE** 🔥\n{random.choice(DARES)}")
-            return True
+        if not target:
+            return False
+        await message.reply(f"{target_mention} - **DARE** 🔥\n{random.choice(DARES)}")
+        return True
     elif "hype" in text:
         await message.reply(f"{target_mention} {random.choice(HYPES)}")
         return True
@@ -160,7 +160,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             await message.reply(f"I pick **{random.choice(parts).strip()}** 👑 No debate.")
             return True
 
-    # --- DEVELOPER ---
     elif "who is your developer" in text or "who made you" in text or "who created you" in text or "who is your creator" in text:
         await message.reply("My developer is **starrlightz** 👑 The GOAT. The legend. No debate! 🐐🔥")
     elif "who is the king" in text:
@@ -212,7 +211,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         await message.reply(f"🤗 {author.mention} gives {target_mention} a BIG hug! Wholesome moment 🥹❤️")
     elif "kiss" in text:
         await message.reply(f"😘 {author.mention} kisses {target_mention}... OKAY GET A ROOM 😭❤️")
-    # --- NEW: SOULMATE + WHO WILL MARRY (GENDER AWARE) - MUST BE BEFORE GENERIC MARRY ---
     elif "soulmate" in text:
         user = target if target else author
         soul = get_opposite_gender_member(message, user)
@@ -255,7 +253,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
     elif "vibe check" in text:
         score = random.randint(0, 100)
         await message.reply(f"✨ VIBE CHECK for {target_mention}: **{score}%** {'IMMACULATE VIBES 🔥' if score >= 80 else 'Vibes are OFF 😭' if score < 30 else 'Mid vibes 👀'}")
-    # --- NEW: WHO HAS MOST AURA / FUNNIEST / BIGGEST YAPPER - MUST BE BEFORE GENERIC AURA ---
     elif "who has" in text and "aura" in text:
         winner = get_random_member(message, bot)
         aura = random.randint(100, 10000)
@@ -304,7 +301,6 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             f"🥠 Fortune for {target_mention}: Your crush will text you soon... maybe.",
         ]
         await message.reply(random.choice(fortunes))
-    # --- NEW: WHEN WILL GET RICH - MUST BE BEFORE WHEN WILL MARRIED ---
     elif "when will" in text and "get rich" in text:
         user = target if target else author
         months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -335,9 +331,11 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
         await message.reply(f"Need help {author.mention}? Use `/help` to see all commands! Or tag me + `list`")
     elif "ping" in text:
         await message.reply("Pong! 🏓")
-    elif any(w in text for w in ["hello", "hi", "hey", "yo"]):
+    elif words & {"hello", "hi", "hey", "yo"}:
         await message.reply(f"Hello {author.mention}! Welcome to the future. 🔥")
     elif "message" in text or "messages" in text:
+        if not target:
+            return False
         count = 0
         try:
             import json, os
@@ -349,11 +347,17 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
             count = 0
         await message.reply(f"💬 {target_mention} has sent **{count}** messages in this server!")
     elif "avatar" in text or "pfp" in text or "profile pic" in text:
+        if not target:
+            return False
         await message.reply(f"🖼️ Avatar of {target_mention}:\n{target.display_avatar.url}")
     elif "joined" in text or "when did" in text:
+        if not target:
+            return False
         joined = target.joined_at.strftime("%d %B %Y") if target.joined_at else "Unknown"
         await message.reply(f"📅 {target_mention} joined this server on **{joined}**")
     elif "who is" in text:
+        if not target:
+            return False
         joined = target.joined_at.strftime("%d %B %Y") if target.joined_at else "Unknown"
         created = target.created_at.strftime("%d %B %Y") if target.created_at else "Unknown"
         roles = ", ".join([r.mention for r in target.roles[1:]]) if len(target.roles) > 1 else "No roles"
