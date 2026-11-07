@@ -111,17 +111,14 @@ async def handle_tag_reply(bot, message: discord.Message) -> bool:
                 async with session.get(url) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        if data.get("results"):
-                            # Pick first result with a direct image url
-                            for r in data["results"]:
-                                if r.get("url") and r["url"].lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
-                                    pic_url = r["url"]
-                                    pic_title = r.get("title", query) or query
-                                    break
-                            if not pic_url:
-                                pic_url = data["results"][0].get("url")
+                    if data.get("results"):
+                        valid = [r for r in data["results"] if r.get("url") and r["url"].lower().endswith((".jpg", ".jpeg", ".png", ".webp"))]
+                        if valid:
+                            chosen = random.choice(valid[:10])
+                            pic_url = chosen["url"]
+                            pic_title = chosen.get("title", query) or query
         except Exception as e:
-            print(f"Pic search failed: {e}")
+            print(f"pic search error: {e}")
         
         if pic_url:
             embed = discord.Embed(title=f"📸 {query.title()}", description=f"Here you go {message.author.display_name} 👑")
