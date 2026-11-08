@@ -35,7 +35,7 @@ from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
 from bot_app.comeback import handle_comeback
 from bot_app.ai_brain import ask_nexus, translate_smart, is_owner
-from bot_app.Nexus_premium import check_paywall, unlock, create_channels, create_categories, create_roles, create_voice, move_channels
+from bot_app.Nexus_premium import check_paywall, unlock, create_channels, create_categories, create_roles, create_voice, move_channels, set_role_color, rename_channel, rename_category
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,10 +65,8 @@ class NexusBot(discord.Client):
         register_v3(self, self.store)
         self.add_view(VerifyView(self.store))
         register_ticket_views(self, self.store)
-        # Global sync (slow, up to 1 hour)
         commands_synced = await self.tree.sync()
         logger.info("Synced %d slash command(s).", len(commands_synced))
-        # Guild sync (instant) - THIS is the fix for /antinuke not showing
         if GUILD_ID != 0:
             guild = discord.Object(id=GUILD_ID)
             self.tree.copy_global_to(guild=guild)
@@ -128,7 +126,7 @@ class NexusBot(discord.Client):
                 return
             parts = message.content.split(" ", 2)
             if len(parts) < 3:
-                await message.reply("Use: `!create channels memes, clips` / `!create roles vip` / `!create categories Gaming` / `!create voice Chill`")
+                await message.reply("Use: `!create channels memes, clips` / `!create roles vip red` / `!create categories Gaming` / `!create voice Chill`")
                 return
             kind = parts[1].lower()
             names = parts[2]
@@ -151,9 +149,6 @@ class NexusBot(discord.Client):
                 await message.reply(blocked)
                 return
             try:
-                # Use rsplit so "to" inside channel names doesn't break it
-                # !move #memes #clips to Gaming
-                # !move memes, clips to 🎮-Gaming
                 content = message.content.replace("!move ", "", 1).strip()
                 left, cat = content.rsplit(" to ", 1)
                 res = await move_channels(message.guild, left.strip(), cat.strip())
@@ -162,14 +157,40 @@ class NexusBot(discord.Client):
                 await message.reply("Use: `!move memes, clips to Gaming` / `!move #memes #clips to Gaming`")
             return
 
+        if message.content.startswith("!rename"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked)
+                return
+            try:
+                content = message.content.replace("!rename ", "", 1).strip()
+                left, new_name = content.rsplit(" to ", 1)
+                res = await rename_channel(message.guild, left.strip(), new_name.strip())
+                await message.reply(res)
+            except:
+                await message.reply("Use: `!rename #general to chat` / `!rename Gaming to New Gaming`")
+            return
+
+        if message.content.startswith("!color"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked)
+                return
+            try:
+                parts = message.content.replace("!color ", "", 1).strip().split()
+                if len(parts) < 2:
+                    await message.reply("Use: `!color vip red` / `!color admin FF0000`")
+                    return
+                res = await set_role_color(message.guild, parts[0], parts[1])
+                await message.reply(res)
+            except:
+                await message.reply("Use: `!color vip red`")
+            return
+
         if message.content.startswith("!translate"):
-            # Now uses translate_smart - handles all forms
-            # !translate come stai -> English
-            # !translate es hello -> Spanish
-            # !translate hindi hello -> Hindi
             raw = message.content.replace("!translate", "", 1).strip()
             if not raw:
-                await message.reply("Use: `!translate come stai` / `!translate es hello` / `!translate hindi hello`")
+                await message.reply("Use: `!translate come stai` / `!translate hindi hello` / `!translate hello in hindi`")
                 return
             await message.reply(translate_smart(raw))
             return
@@ -177,7 +198,6 @@ class NexusBot(discord.Client):
         # --- NEXUS AI BRAIN ---
         if self.user in message.mentions and message.guild and not message.author.bot:
             content = message.content
-            # remove the @NEXUS mention
             content = content.replace(f"<@{self.user.id}>", "").replace(f"<@!{self.user.id}>", "").strip()
             if content:
                 async with message.channel.typing():
