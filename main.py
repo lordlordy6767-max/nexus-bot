@@ -34,7 +34,7 @@ from bot_app.games import register_games_commands
 from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
 from bot_app.comeback import handle_comeback
-from bot_app.ai_brain import ask_nexus, translate, is_owner
+from bot_app.ai_brain import ask_nexus, translate_smart, is_owner
 from bot_app.Nexus_premium import check_paywall, unlock, create_channels, create_categories, create_roles, create_voice, move_channels
 
 logging.basicConfig(
@@ -151,19 +151,27 @@ class NexusBot(discord.Client):
                 await message.reply(blocked)
                 return
             try:
-                left, cat = message.content.replace("!move ", "").split(" to ")
-                res = await move_channels(message.guild, left, cat.strip())
+                # Use rsplit so "to" inside channel names doesn't break it
+                # !move #memes #clips to Gaming
+                # !move memes, clips to 🎮-Gaming
+                content = message.content.replace("!move ", "", 1).strip()
+                left, cat = content.rsplit(" to ", 1)
+                res = await move_channels(message.guild, left.strip(), cat.strip())
                 await message.reply(res)
             except:
-                await message.reply("Use: `!move memes, clips to Gaming`")
+                await message.reply("Use: `!move memes, clips to Gaming` / `!move #memes #clips to Gaming`")
             return
 
         if message.content.startswith("!translate"):
-            parts = message.content.split(" ", 2)
-            if len(parts) < 3:
-                await message.reply("Use: `!translate es hello` / `!translate fr how are you`")
+            # Now uses translate_smart - handles all forms
+            # !translate come stai -> English
+            # !translate es hello -> Spanish
+            # !translate hindi hello -> Hindi
+            raw = message.content.replace("!translate", "", 1).strip()
+            if not raw:
+                await message.reply("Use: `!translate come stai` / `!translate es hello` / `!translate hindi hello`")
                 return
-            await message.reply(translate(parts[2], target=parts[1]))
+            await message.reply(translate_smart(raw))
             return
         # --- END PREMIUM ---
         # --- NEXUS AI BRAIN ---

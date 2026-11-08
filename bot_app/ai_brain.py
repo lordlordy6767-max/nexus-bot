@@ -46,13 +46,86 @@ def remember_forever(key, value):
 def recall_forever(key):
     return LONG_TERM_MEMORY.get(key, None)
 
-# --- TRANSLATE - FREE ---
+# --- TRANSLATE - FREE + SMART - ALL LANGUAGES ---
+LANG_MAP = {
+    # Main ones you use
+    "italian": "it", "italiano": "it", "it": "it",
+    "english": "en", "inglese": "en", "en": "en",
+    "spanish": "es", "espanol": "es", "español": "es", "es": "es",
+    "french": "fr", "francese": "fr", "fr": "fr",
+    "german": "de", "tedesco": "de", "de": "de",
+    "portuguese": "pt", "portoghese": "pt", "pt": "pt",
+    "arabic": "ar", "arabo": "ar", "ar": "ar",
+    "albanian": "sq", "albanese": "sq", "sq": "sq",
+    "romanian": "ro", "rumeno": "ro", "ro": "ro",
+    "turkish": "tr", "turco": "tr", "tr": "tr",
+    "russian": "ru", "russo": "ru", "ru": "ru",
+    "chinese": "zh", "cinese": "zh", "zh": "zh",
+    "japanese": "ja", "giapponese": "ja", "ja": "ja",
+    "korean": "ko", "coreano": "ko", "ko": "ko",
+    # Missing ones you asked for
+    "hindi": "hi", "hindu": "hi", "hi": "hi",
+    "urdu": "ur", "ur": "ur",
+    "punjabi": "pa", "pa": "pa",
+    "bengali": "bn", "bangla": "bn", "bn": "bn",
+    "greek": "el", "greco": "el", "el": "el",
+    "dutch": "nl", "olandese": "nl", "nl": "nl",
+    "polish": "pl", "polacco": "pl", "pl": "pl",
+    "swedish": "sv", "svedese": "sv", "sv": "sv",
+    "norwegian": "no", "norvegese": "no", "no": "no",
+    "danish": "da", "danese": "da", "da": "da",
+    "finnish": "fi", "finlandese": "fi", "fi": "fi",
+    "czech": "cs", "ceco": "cs", "cs": "cs",
+    "slovak": "sk", "slovacco": "sk", "sk": "sk",
+    "hungarian": "hu", "ungherese": "hu", "hu": "hu",
+    "ukrainian": "uk", "ucraino": "uk", "uk": "uk",
+    "bulgarian": "bg", "bulgaro": "bg", "bg": "bg",
+    "croatian": "hr", "croato": "hr", "hr": "hr",
+    "serbian": "sr", "serbo": "sr", "sr": "sr",
+    "bosnian": "bs", "bosniaco": "bs", "bs": "bs",
+    "macedonian": "mk", "macedone": "mk", "mk": "mk",
+    "slovenian": "sl", "sloveno": "sl", "sl": "sl",
+    "thai": "th", "tailandese": "th", "th": "th",
+    "vietnamese": "vi", "vietnamita": "vi", "vi": "vi",
+    "indonesian": "id", "indonesiano": "id", "id": "id",
+    "malay": "ms", "malese": "ms", "ms": "ms",
+    "filipino": "tl", "tagalog": "tl", "tl": "tl",
+    "tamil": "ta", "ta": "ta",
+    "telugu": "te", "te": "te",
+    "marathi": "mr", "mr": "mr",
+    "gujarati": "gu", "gu": "gu",
+    "nepali": "ne", "ne": "ne",
+    "persian": "fa", "farsi": "fa", "fa": "fa",
+    "hebrew": "he", "ebraico": "he", "he": "he",
+    "swahili": "sw", "sw": "sw",
+    "latin": "la", "latino": "la", "la": "la",
+}
+
 try:
     from deep_translator import GoogleTranslator
     def translate(text, target="en"):
+        # Normalize "italian" -> "it", "IT" -> "it"
+        target = LANG_MAP.get(target.lower().strip(), target.lower().strip())
+        if not text or not text.strip():
+            return "❌ Give me something to translate!"
         return GoogleTranslator(source='auto', target=target).translate(text)
+
+    def translate_smart(raw_text):
+        """Handles: '!translate come stai' AND '!translate es hello' AND '!translate italian hello'"""
+        raw_text = raw_text.strip()
+        if not raw_text:
+            return "Use: `!translate come stai` or `!translate es hello` or `!translate italian hello`"
+        parts = raw_text.split(" ", 1)
+        # If first word is a language (code or name) and there's more text
+        if len(parts) == 2 and parts[0].lower() in LANG_MAP:
+            target = LANG_MAP[parts[0].lower()]
+            return f"🌐 {translate(parts[1], target=target)}"
+        # No language given -> translate to English
+        return f"🌐 {translate(raw_text, target='en')}"
 except:
     def translate(text, target="en"):
+        return "Translate not installed yet. Run: pip install deep-translator"
+    def translate_smart(raw_text):
         return "Translate not installed yet. Run: pip install deep-translator"
 
 def ask_nexus(user_message, username="", channel_id="dm", user_id=None):
