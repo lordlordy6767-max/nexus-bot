@@ -354,6 +354,60 @@ class NexusBot(discord.Client):
                 await message.reply(blocked); return
             await message.reply(await premium_all.restore_backup(message.guild)); return
 
+        if message.content.startswith("!massdelete"):
+            try:
+                parts = message.content.split()
+                if len(parts) >= 3 and parts[1] == "channels":
+                    prefix = parts[2]
+                    deleted = 0
+                    for ch in list(message.guild.channels):
+                        if ch.name.startswith(prefix):
+                            await ch.delete()
+                            deleted += 1
+                    await message.channel.send(f"Deleted {deleted} channels starting with {prefix}")
+                    return
+                await message.channel.send("Which channels should I delete? Reply with names separated by comma.\nExample: `gaming, music, chat`\nOr reply `all text` / `all voice` / `cancel`")
+                def check(m):
+                    return m.author == message.author and m.channel == message.channel
+                try:
+                    reply = await client.wait_for("message", check=check, timeout=60.0)
+                except:
+                    await message.channel.send("Timed out - no channels deleted.")
+                    return
+                text = reply.content.strip().lower()
+                if text == "cancel":
+                    await message.channel.send("Cancelled - nothing deleted.")
+                    return
+                deleted = 0
+                notfound = []
+                if text == "all text":
+                    for ch in list(message.guild.text_channels):
+                        if ch != message.channel:
+                            await ch.delete()
+                            deleted += 1
+                elif text == "all voice":
+                    for ch in list(message.guild.voice_channels):
+                        await ch.delete()
+                        deleted += 1
+                else:
+                    names = [n.strip().lower() for n in reply.content.split(",")]
+                    for name in names:
+                        found = False
+                        for ch in list(message.guild.channels):
+                            if ch.name.lower() == name:
+                                await ch.delete()
+                                deleted += 1
+                                found = True
+                        if not found:
+                            notfound.append(name)
+                msg = f"Deleted {deleted} channels."
+                if notfound:
+                    msg += " Not found: " + ", ".join(notfound)
+                await message.channel.send(msg)
+            except Exception as e:
+                await message.channel.send(f"Delete failed: {e}")
+            return
+
         if message.content.startswith("!masscreate"):
             blocked = check_paywall(message.author.id)
             if blocked:
@@ -362,10 +416,10 @@ class NexusBot(discord.Client):
                 parts = message.content.split()
                 # !masscreate channels 5 gaming
                 kind = parts[1]; count = parts[2]; base = parts[3]
-                await message.reply(await premium_all.mass_create(message.guild, kind, count, base))
+                await message.reply(await premium_all.mass_create(message, kind, count, base))
             except:
-                await message.reply("Use: `!masscreate channels 5 gaming` / `!masscreate roles 5 vip`")
-            return
+                await message.reply("Use: `!masscreate channels 5 gaming`")
+                return
 
         if message.content.startswith("!aiimage"):
             blocked = check_paywall(message.author.id)
