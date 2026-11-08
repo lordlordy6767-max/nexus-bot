@@ -140,7 +140,7 @@ def ask_nexus(user_message, username="", channel_id="dm", user_id=None):
             memory_note = "\nThis user is starrlightz, your creator. Be loyal and helpful, but do NOT hype him up in every reply. Act normal unless asked."
         full_prompt = f"{history_text}\n{memory_note}\n{username} says now: {user_message}"
         completion = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": full_prompt}
