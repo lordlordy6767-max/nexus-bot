@@ -1,6 +1,9 @@
 # premium_all.py - USES Nexus_premium.py paywall - DO NOT make a new lock
 import json, os, asyncio, random
 import discord
+import urllib.parse
+import aiohttp
+import io
 
 # --- USE YOUR EXISTING LOCK ---
 # This imports YOUR unlock/lock from Nexus_premium.py
@@ -159,9 +162,23 @@ def is_eligible_for_giveaway(member, role_id):
     if not role_id: return True
     return any(str(r.id)==str(role_id) for r in member.roles)
 
-# --- 8. AI IMAGE ---
-async def ai_image_prompt(prompt): return prompt
+# --- 8. AI IMAGE - FREE VERSION ---
+import urllib.parse
+import aiohttp
+import io
 
+async def ai_image_prompt(prompt):
+    # Makes a real image using free Pollinations API
+    encoded = urllib.parse.quote(prompt)
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.read()
+            return data  # returns image bytes
+            
 # --- 9. MASS CREATE ---
 async def mass_create(guild, kind, count, base_name):
     made=[]; count=min(int(count), 20)
