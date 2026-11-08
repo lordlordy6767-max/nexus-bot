@@ -35,7 +35,10 @@ from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
 from bot_app.comeback import handle_comeback
 from bot_app.ai_brain import ask_nexus, translate_smart, is_owner
-from bot_app.Nexus_premium import check_paywall, unlock, create_channels, create_categories, create_roles, create_voice, move_channels, set_role_color, rename_channel, rename_category
+from bot_app.Nexus_premium import check_paywall, unlock, lock, create_channels, create_categories, create_roles, create_voice, move_channels, set_role_color, rename_channel, rename_category
+# --- NEW: PREMIUM ALL ---
+from bot_app import premium_all
+from bot_app.premium_all import convert_font, list_fonts, build_list_embed, apply_font_if_any
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,8 +46,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("discord_bot")
 
-# --- PUT YOUR SERVER ID HERE ---
-GUILD_ID = 0  # <-- PASTE YOUR SERVER ID HERE, e.g. 123456789012345678
+GUILD_ID = 0
 
 class NexusBot(discord.Client):
     def __init__(self) -> None:
@@ -79,6 +81,9 @@ class NexusBot(discord.Client):
 
     async def on_member_join(self, member: discord.Member) -> None:
         await handle_member_join(self.store, member)
+        # AutoRole - premium_all
+        try: await premium_all.give_autorole(member)
+        except: pass
 
     async def on_message(self, message):
         if message.author.bot:
@@ -107,6 +112,18 @@ class NexusBot(discord.Client):
 
         if await handle_tag_reply(self, message):
             return
+
+        # --- AFK: if someone mentions AFK user, show it / if AFK user talks, remove ---
+        if message.guild and message.mentions:
+            for u in message.mentions:
+                r = premium_all.get_afk(message.guild.id, u.id)
+                if r:
+                    await message.reply(f"💤 {u.display_name} is AFK: {r}")
+                    break
+        if message.guild and premium_all.get_afk(message.guild.id, message.author.id):
+            premium_all.remove_afk(message.guild.id, message.author.id)
+            await message.reply(f"👋 Welcome back {message.author.display_name}, AFK removed.")
+
         # --- NEXUS PREMIUM ---
         if message.content.startswith("!unlock"):
             if not is_owner(message.author.id):
@@ -119,6 +136,50 @@ class NexusBot(discord.Client):
                 await message.reply("Use: `!unlock @user`")
             return
 
+        if message.content.startswith("!lock"):
+            if not is_owner(message.author.id):
+                await message.reply("❌ Only Starr can lock.")
+                return
+            if message.mentions:
+                target = message.mentions[0]
+                await message.reply(lock(target.id, message.author.id))
+            else:
+                await message.reply("Use: `!lock @user`")
+            return
+
+        # --- !list - FREE for everyone to see, premium to use ---
+        if message.content.strip() == "!list":
+            await message.reply(embed=build_list_embed())
+            return
+
+        # --- FONTS - PREMIUM ---
+        if message.content.startswith("!fonts"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            await message.reply(list_fonts()); return
+
+        if message.content.startswith("!font "):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            parts = message.content.split(" ", 2)
+            if len(parts) < 3:
+                await message.reply("Use: `!font bold Hello`"); return
+            await message.reply(convert_font(parts[2], parts[1])); return
+
+        if message.content.startswith("!big "):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            await message.reply(convert_font(message.content[5:].strip(), "big")); return
+
+        if message.content.startswith("!small "):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            await message.reply(convert_font(message.content[7:].strip(), "small")); return
+
         if message.content.startswith("!create"):
             blocked = check_paywall(message.author.id)
             if blocked:
@@ -126,10 +187,28 @@ class NexusBot(discord.Client):
                 return
             parts = message.content.split(" ", 2)
             if len(parts) < 3:
-                await message.reply("Use: `!create channels memes, clips` / `!create roles vip red` / `!create categories Gaming` / `!create voice Chill`")
+                await message.reply("Use: `!create channels memes, clips` / `!create roles vip red` / `!create categories Gaming` / `!create voice Chill` / `!create categories big Gaming`")
                 return
             kind = parts[1].lower()
             names = parts[2]
+            # FONTS IN CREATE: !create categories big Gaming / !create roles bold VIP red
+            # If first word is a font, convert the rest before creating
+            words = names.split()
+            if words and words[0].lower() in premium_all.FONTS:
+                font = words[0].lower()
+                rest = " ".join(words[1:])
+                # convert each comma part separately, keep color word if roles
+                if kind in ["roles", "role"]:
+                    new_parts = []
+                    for p in rest.split(","):
+                        pw = p.strip().split()
+                        if len(pw) >= 2:
+                            new_parts.append(convert_font(pw[0], font) + " " + " ".join(pw[1:]))
+                        elif pw:
+                            new_parts.append(convert_font(pw[0], font))
+                    names = ", ".join(new_parts)
+                else:
+                    names = convert_font(rest, font)
             if kind in ["channels", "channel"]:
                 res = await create_channels(message.guild, names)
             elif kind in ["roles", "role"]:
@@ -187,6 +266,133 @@ class NexusBot(discord.Client):
                 await message.reply("Use: `!color vip red`")
             return
 
+        # --- NEW PREMIUM ALL COMMANDS ---
+        if message.content.startswith("!autorole"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            if message.role_mentions:
+                await message.reply(premium_all.set_autorole(message.guild.id, message.role_mentions[0].id))
+            else:
+                await message.reply("Use: `!autorole @Member`"); return
+            return
+
+        if message.content.startswith("!removeautorole"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            await message.reply(premium_all.remove_autorole(message.guild.id)); return
+
+        if message.content.startswith("!levelroles"):
+            await message.reply(premium_all.list_level_roles(message.guild.id)); return
+
+        if message.content.startswith("!levelrole"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            try:
+                parts = message.content.split()
+                lvl = parts[1]
+                role = message.role_mentions[0]
+                await message.reply(premium_all.set_level_role(message.guild.id, lvl, role.id))
+            except:
+                await message.reply("Use: `!levelrole 10 @VIP`")
+            return
+
+        if message.content.startswith("!afk"):
+            reason = message.content.replace("!afk", "", 1).strip() or "AFK"
+            premium_all.set_afk(message.guild.id, message.author.id, reason)
+            await message.reply(f"💤 AFK set: {reason}"); return
+
+        if message.content.startswith("!addcmd"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            try:
+                parts = message.content.split(" ", 2)
+                await message.reply(premium_all.add_custom_cmd(message.guild.id, parts[1], parts[2]))
+            except:
+                await message.reply("Use: `!addcmd hello Hello!`")
+            return
+
+        if message.content.startswith("!delcmd"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            try:
+                name = message.content.split()[1]
+                await message.reply(premium_all.del_custom_cmd(message.guild.id, name))
+            except:
+                await message.reply("Use: `!delcmd hello`")
+            return
+
+        if message.content.strip() == "!cmds":
+            await message.reply(premium_all.list_custom_cmds(message.guild.id)); return
+
+        if message.content.startswith("!starboard"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            if message.channel_mentions:
+                await message.reply(premium_all.set_starboard(message.guild.id, message.channel_mentions[0].id))
+            else:
+                await message.reply("Use: `!starboard #starboard`")
+            return
+
+        if message.content.strip() == "!backup":
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            await message.reply(await premium_all.make_backup(message.guild)); return
+
+        if message.content.strip() == "!restore":
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            await message.reply(await premium_all.restore_backup(message.guild)); return
+
+        if message.content.startswith("!masscreate"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            try:
+                parts = message.content.split()
+                # !masscreate channels 5 gaming
+                kind = parts[1]; count = parts[2]; base = parts[3]
+                await message.reply(await premium_all.mass_create(message.guild, kind, count, base))
+            except:
+                await message.reply("Use: `!masscreate channels 5 gaming` / `!masscreate roles 5 vip`")
+            return
+
+        if message.content.startswith("!aiimage"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            prompt = message.content.replace("!aiimage", "", 1).strip()
+            if not prompt:
+                await message.reply("Use: `!aiimage a dragon`"); return
+            # Uses your ai_brain if you wire OpenAI, for now sends prompt
+            await message.reply(f"🎨 AI Image prompt: `{prompt}` - (connect OpenAI key to generate)"); return
+
+        if message.content.startswith("!giveawayrole"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked); return
+            # !giveawayrole 1h Nitro @VIP -> shows who can join
+            clean, role_id = premium_all.parse_giveaway_role(message.content.replace("!giveawayrole", "", 1).strip())
+            if role_id:
+                await message.reply(f"🎁 Giveaway: **{clean}** - Only <@&{role_id}> can join! Use your normal `!giveaway` + this check.")
+            else:
+                await message.reply(f"🎁 Giveaway: **{clean}** - Everyone can join.")
+            return
+
+        # Custom commands run - FREE if already created, but creation is premium
+        if message.content.startswith("!") and message.guild:
+            cmd_name = message.content[1:].split()[0].lower()
+            custom = premium_all.get_custom_cmd(message.guild.id, cmd_name)
+            if custom:
+                await message.reply(custom); return
+
         if message.content.startswith("!translate"):
             raw = message.content.replace("!translate", "", 1).strip()
             if not raw:
@@ -205,20 +411,17 @@ class NexusBot(discord.Client):
                 await message.reply(reply)
                 return
         # --- END AI BRAIN ---
-            
+
         if await handle_automod(self.store, message):
             return
         await handle_level_message(message)
-    async def on_raw_reaction_add(
-        self,
-        payload: discord.RawReactionActionEvent,
-    ) -> None:
+        # Level roles check - if user leveled, give role (levels.py handles XP, this is best-effort)
+        # Note: if your levels system has level in message, this will be handled via premium_all.check_level_roles in future
+
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         await handle_reaction(self, self.store, payload, added=True)
 
-    async def on_raw_reaction_remove(
-        self,
-        payload: discord.RawReactionActionEvent,
-    ) -> None:
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
         await handle_reaction(self, self.store, payload, added=False)
 
     async def close(self) -> None:
