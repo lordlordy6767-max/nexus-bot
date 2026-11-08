@@ -372,6 +372,11 @@ class NexusBot(discord.Client):
             if blocked:
                 await message.reply(blocked); return
             prompt = message.content.replace("!aiimage", "", 1).strip()
+            style_suffix = ""
+            if prompt.lower().startswith("anime "):
+                prompt = prompt[6:].strip()
+                style_suffix = ", anime style, vibrant, detailed anime art"
+            prompt = prompt + style_suffix
             if not prompt:
                 await message.reply("Use: `!aiimage a dragon`"); return
         await message.reply(f"🎨 Making: **{prompt}**...")
