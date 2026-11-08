@@ -34,7 +34,8 @@ from bot_app.games import register_games_commands
 from bot_app.moderation import register_farewell
 from bot_app.v3 import register_v3
 from bot_app.comeback import handle_comeback
-from bot_app.ai_brain import ask_nexus
+from bot_app.ai_brain import ask_nexus, translate, is_owner
+from bot_app.Nexus_premium import check_paywall, unlock, create_channels, create_categories, create_roles, create_voice, move_channels
 
 logging.basicConfig(
     level=logging.INFO,
@@ -108,14 +109,71 @@ class NexusBot(discord.Client):
 
         if await handle_tag_reply(self, message):
             return
-                # --- NEXUS AI BRAIN ---
+        # --- NEXUS PREMIUM ---
+        if message.content.startswith("!unlock"):
+            if not is_owner(message.author.id):
+                await message.reply("❌ Only Starr can unlock.")
+                return
+            if message.mentions:
+                target = message.mentions[0]
+                await message.reply(unlock(target.id, message.author.id))
+            else:
+                await message.reply("Use: `!unlock @user`")
+            return
+
+        if message.content.startswith("!create"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked)
+                return
+            parts = message.content.split(" ", 2)
+            if len(parts) < 3:
+                await message.reply("Use: `!create channels memes, clips` / `!create roles vip` / `!create categories Gaming` / `!create voice Chill`")
+                return
+            kind = parts[1].lower()
+            names = parts[2]
+            if kind in ["channels", "channel"]:
+                res = await create_channels(message.guild, names)
+            elif kind in ["roles", "role"]:
+                res = await create_roles(message.guild, names)
+            elif kind in ["categories", "category"]:
+                res = await create_categories(message.guild, names)
+            elif kind in ["voice"]:
+                res = await create_voice(message.guild, names)
+            else:
+                res = "Use: channels / roles / categories / voice"
+            await message.reply(res)
+            return
+
+        if message.content.startswith("!move"):
+            blocked = check_paywall(message.author.id)
+            if blocked:
+                await message.reply(blocked)
+                return
+            try:
+                left, cat = message.content.replace("!move ", "").split(" to ")
+                res = await move_channels(message.guild, left, cat.strip())
+                await message.reply(res)
+            except:
+                await message.reply("Use: `!move memes, clips to Gaming`")
+            return
+
+        if message.content.startswith("!translate"):
+            parts = message.content.split(" ", 2)
+            if len(parts) < 3:
+                await message.reply("Use: `!translate es hello` / `!translate fr how are you`")
+                return
+            await message.reply(translate(parts[2], target=parts[1]))
+            return
+        # --- END PREMIUM ---
+        # --- NEXUS AI BRAIN ---
         if self.user in message.mentions and message.guild and not message.author.bot:
             content = message.content
             # remove the @NEXUS mention
             content = content.replace(f"<@{self.user.id}>", "").replace(f"<@!{self.user.id}>", "").strip()
             if content:
                 async with message.channel.typing():
-                    reply = ask_nexus(content, message.author.name)
+                    reply = ask_nexus(content, message.author.name, channel_id=str(message.channel.id), user_id=message.author.id)
                 await message.reply(reply)
                 return
         # --- END AI BRAIN ---
