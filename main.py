@@ -425,7 +425,7 @@ class NexusBot(discord.Client):
                 parts = message.content.split()
                 # !masscreate channels 5 gaming
                 kind = parts[1]; count = parts[2]; base = parts[3]
-                await message.reply(await premium_all.mass_create(message, kind, count, base))
+                await message.reply(await premium_all.mass_create(message.guild, kind, count, base))
             except:
                 await message.reply("Use: `!masscreate channels 5 gaming`")
                 return

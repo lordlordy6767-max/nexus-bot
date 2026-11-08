@@ -189,7 +189,8 @@ async def mass_create(guild, kind, count, base_name):
             elif kind=="roles": await guild.create_role(name=name)
             elif kind=="categories": await guild.create_category(name)
             made.append(name)
-        except: break
+        except Exception as e:
+            return f"❌ Failed at {name}: {e}"
     return f"✅ Mass created {len(made)} {kind}: {', '.join(made)}"
 
 # --- 10. !list ---
