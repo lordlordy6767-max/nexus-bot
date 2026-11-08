@@ -1,4 +1,7 @@
 import os
+import urllib.parse
+import aiohttp
+import io
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -371,8 +374,19 @@ class NexusBot(discord.Client):
             prompt = message.content.replace("!aiimage", "", 1).strip()
             if not prompt:
                 await message.reply("Use: `!aiimage a dragon`"); return
-            # Uses your ai_brain if you wire OpenAI, for now sends prompt
-            await message.reply(f"🎨 AI Image prompt: `{prompt}` - (connect OpenAI key to generate)"); return
+        await message.reply(f"🎨 Making: **{prompt}**...")
+        encoded = urllib.parse.quote(prompt)
+        url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.read()
+            file = discord.File(io.BytesIO(data), filename="nexus-ai.png")
+            await message.reply(file=file)
+        except Exception as e:
+            await message.reply(f"Error: {e}")
+        return
+    
 
         if message.content.startswith("!giveawayrole"):
             blocked = check_paywall(message.author.id)
