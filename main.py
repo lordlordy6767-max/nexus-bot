@@ -358,6 +358,15 @@ class NexusBot(discord.Client):
             try:
                 parts = message.content.split()
                 if len(parts) >= 3 and parts[1] == "channels":
+                    if len(parts) == 4 and parts[2].isdigit():
+                        count = int(parts[2]); prefix = parts[3]
+                        deleted = 0
+                        for n in range(1, count+1):
+                            for ch in list(message.guild.channels):
+                                if ch.name == f"{prefix}-{n}":
+                                    await ch.delete(); deleted += 1
+                        await message.channel.send(f"Deleted {deleted} channels starting with {prefix}")
+                        return
                     prefix = parts[2]
                     deleted = 0
                     for ch in list(message.guild.channels):
