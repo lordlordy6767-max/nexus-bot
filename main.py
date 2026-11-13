@@ -533,7 +533,12 @@ class NexusBot(discord.Client):
             )
         except Exception as e:
             print(f"Join log failed: {e}")
+            
+import discord
+from discord.ext import commands
 
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="!", intents=intents)
 def main() -> None:
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
@@ -541,8 +546,6 @@ def main() -> None:
             "DISCORD_BOT_TOKEN is missing. Add your bot token in Replit Secrets."
         )
         raise SystemExit(1)
-
     bot.run(token, log_handler=None)
-
 if __name__ == "__main__":
     main()
