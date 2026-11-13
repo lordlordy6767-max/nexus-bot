@@ -521,8 +521,18 @@ class NexusBot(discord.Client):
     async def close(self) -> None:
         await self.store.close()
         await super().close()
-
-bot = NexusBot()
+    async def on_guild_join(self, guild):
+        try:
+            owner = await self.fetch_user(1545810202232885258)
+            await owner.send(
+                f"👑 **NEXUS joined a new server!**\n"
+                f"**Server:** {guild.name}\n"
+                f"**Members:** {guild.member_count}\n"
+                f"**Server ID:** {guild.id}\n"
+                f"**Total servers now:** {len(self.guilds)}"
+            )
+        except Exception as e:
+            print(f"Join log failed: {e}")
 
 def main() -> None:
     token = os.getenv("DISCORD_BOT_TOKEN")
